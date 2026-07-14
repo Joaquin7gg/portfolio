@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agente SOC de triaje de logs con IA local · Joaquín Luis García</title>
+<meta name="description" content="Agente de IA local y offline para triaje de logs de seguridad: detección determinista en Python, mapeo a MITRE ATT&CK e informe redactado por un LLM local. Proyecto en desarrollo." />
+<meta name="theme-color" content="#0C141F" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root, [data-theme="dark"]{
+    --bg:#0C141F; --bg-grad:#0F1A26; --panel:#13202E; --panel-2:#172838;
+    --border:#233344; --border-soft:#1B2937;
+    --text:#E4ECF5; --muted:#8497AD; --muted-dim:#5C6E83;
+    --accent:#5EEAD4; --accent-strong:#2DD4BF; --accent-ink:#06231f; --warm:#F4B860;
+    --net:rgba(94,234,212,1);
+  }
+  [data-theme="light"]{
+    --bg:#EDF2F7; --bg-grad:#F6F9FC; --panel:#FFFFFF; --panel-2:#F4F8FB;
+    --border:#D3DEE9; --border-soft:#E1E9F1;
+    --text:#16242F; --muted:#516274; --muted-dim:#8497A8;
+    --accent:#0E9E8E; --accent-strong:#0B8576; --accent-ink:#ffffff; --warm:#C77D1A;
+    --net:rgba(14,158,142,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:linear-gradient(180deg,var(--bg-grad),var(--bg) 460px);
+    color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .4s,color .4s}
+  a{color:inherit;text-decoration:none}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.9em;background:color-mix(in srgb,var(--accent) 10%,transparent);
+    border:1px solid var(--border-soft);border-radius:5px;padding:1px 6px;color:var(--text)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+  #net{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%);
+    -webkit-mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%)}
+  [data-theme="light"] #net{opacity:.38}
+
+  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 72%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border-soft)}
+  .bar{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .handle{font-family:"Space Grotesk";font-weight:700;letter-spacing:.04em;font-size:15px;display:flex;align-items:center;gap:6px}
+  .handle b{color:var(--accent)}
+  .handle small{font-family:"IBM Plex Mono";font-weight:400;font-size:12px;color:var(--muted)}
+  .back{font-size:13.5px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;transition:color .2s,gap .18s}
+  .back:hover{color:var(--text);gap:10px}
+  .tools{display:flex;align-items:center;gap:14px}
+  .theme-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);cursor:pointer;display:grid;place-items:center;transition:transform .2s,border-color .2s}
+  .theme-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .theme-btn svg{width:17px;height:17px}
+
+  .phero{padding:64px 0 12px}
+  .eyebrow{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--accent);letter-spacing:.05em;margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.6}
+  .badge-wip{display:inline-flex;align-items:center;gap:7px;font-family:"IBM Plex Mono";font-size:11px;color:#2a1c05;
+    background:var(--warm);padding:4px 10px;border-radius:20px;letter-spacing:.04em}
+  h1{font-family:"Space Grotesk";font-weight:700;font-size:clamp(2.1rem,5vw,3.4rem);line-height:1.04;letter-spacing:-.02em}
+  .subtitle{font-family:"Space Grotesk";font-weight:500;font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--muted);margin-top:16px;max-width:62ch}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .chip{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);border:1px solid var(--border-soft);
+    background:color-mix(in srgb,var(--panel) 60%,transparent);padding:7px 12px;border-radius:8px}
+  .chip b{color:var(--accent);font-weight:500}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .btn{font-size:14px;font-weight:500;padding:11px 20px;border-radius:9px;border:1px solid var(--border);
+    transition:transform .18s,border-color .2s,background .2s;display:inline-flex;align-items:center;gap:9px;background:transparent;color:var(--text);cursor:pointer}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  section{padding:44px 0}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:26px}
+  .sec-num{font-family:"IBM Plex Mono";font-size:13px;color:var(--accent);opacity:.85}
+  h2{font-family:"Space Grotesk";font-weight:600;font-size:clamp(1.5rem,3.2vw,2rem);letter-spacing:-.01em}
+  .sec-line{flex:1;height:1px;background:var(--border-soft);align-self:center}
+  .lede{max-width:70ch;color:var(--text);opacity:.88;font-size:16px}
+  .lede+.lede{margin-top:15px}
+  .lede strong{opacity:1;font-weight:600}
+
+  /* split: código vs IA */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .col{border:1px solid var(--border-soft);border-radius:12px;padding:24px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .col.code{border-left:3px solid var(--accent)}
+  .col.ai{border-left:3px solid var(--warm)}
+  .col .tagk{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:block}
+  .col.code .tagk{color:var(--accent)} .col.ai .tagk{color:var(--warm)}
+  .col h4{font-family:"Space Grotesk";font-weight:600;font-size:1.15rem;margin-bottom:10px}
+  .col p{font-size:14.5px;color:var(--text);opacity:.85}
+  .motivo{margin-top:16px;font-size:14.5px;color:var(--muted);max-width:80ch}
+  .motivo b{color:var(--text)}
+
+  /* flujo */
+  .flow{display:flex;flex-wrap:wrap;gap:10px}
+  .step{flex:1;min-width:150px;border:1px solid var(--border-soft);border-radius:10px;padding:16px 14px;
+    background:color-mix(in srgb,var(--panel) 55%,transparent);position:relative}
+  .step .sn{font-family:"IBM Plex Mono";font-size:11px;color:var(--accent);display:block;margin-bottom:6px}
+  .step .st{font-family:"Space Grotesk";font-weight:600;font-size:.98rem}
+  .step .sd{font-size:12.5px;color:var(--muted);margin-top:5px}
+
+  .feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .feat{border:1px solid var(--border-soft);border-radius:12px;padding:20px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .feat h4{font-family:"Space Grotesk";font-weight:600;font-size:1.02rem;margin-bottom:7px}
+  .feat p{font-size:14px;color:var(--text);opacity:.82}
+
+  .stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .group{border:1px solid var(--border-soft);border-radius:12px;padding:22px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .group h4{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent);letter-spacing:.06em;margin-bottom:14px;text-transform:uppercase}
+  .group ul{list-style:none;display:flex;flex-wrap:wrap;gap:7px}
+  .group li{font-size:12.5px;color:var(--text);opacity:.85;border:1px solid var(--border);padding:5px 10px;border-radius:7px;background:var(--panel)}
+
+  .roadmap{display:grid;gap:12px}
+  .rm{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--border-soft);border-radius:12px;padding:18px 20px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .rm .n{font-family:"IBM Plex Mono";font-size:12px;color:var(--warm);flex:none;margin-top:2px}
+  .rm p{font-size:14.5px;color:var(--text);opacity:.85}
+
+  .empty{border:1px dashed var(--border);border-radius:14px;padding:44px 24px;text-align:center;color:var(--muted);
+    background:color-mix(in srgb,var(--panel) 40%,transparent)}
+  .empty .big{font-size:30px;margin-bottom:12px}
+  .empty p{max-width:60ch;margin:0 auto}
+
+  footer{border-top:1px solid var(--border-soft);padding:26px 0;margin-top:40px}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted-dim)}
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  @media (max-width:760px){section{padding:38px 0}.phero{padding:44px 0 8px}.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="net" aria-hidden="true"></canvas>
+
+<header>
+  <div class="wrap bar">
+    <a class="back" href="index.html">← Volver al portfolio</a>
+    <div class="tools">
+      <div class="handle">JLG<b>·</b><small>sys/sec</small></div>
+      <button class="theme-btn" id="theme" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema"></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="phero" id="top">
+    <div class="eyebrow mono"><span class="badge-wip">🛠️ En desarrollo</span> ciberseguridad defensiva · blue team</div>
+    <h1>Agente SOC de triaje de logs</h1>
+    <p class="subtitle">Agente de IA <strong style="color:var(--text)">local y offline</strong> que hace el primer triaje de un analista SOC: detecta patrones de ataque en logs, los mapea a <strong style="color:var(--text)">MITRE ATT&amp;CK</strong> y redacta un informe. Proyecto de aprendizaje orientado a un perfil SOC/MSP.</p>
+    <div class="meta-row">
+      <span class="chip">Estado: <b>en desarrollo</b></span>
+      <span class="chip">Ejecución: <b>100% local / offline</b></span>
+      <span class="chip">Enfoque: <b>defensivo (blue team)</b></span>
+    </div>
+    <div class="cta">
+      <a class="btn btn-ghost" href="index.html">← Volver al portfolio</a>
+    </div>
+  </section>
+
+  <!-- 01 QUÉ ES -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Qué es</h2><span class="sec-line"></span></div>
+    <p class="lede">Un agente de IA que se ejecuta <strong>en local, sin conexión</strong>, y automatiza el primer paso del trabajo de un analista SOC: coge un log de seguridad (por ejemplo, accesos SSH), <strong>detecta patrones de ataque</strong> (fuerza bruta, IPs sospechosas, horarios anómalos), los <strong>mapea a técnicas de MITRE ATT&amp;CK</strong> y redacta un informe de triaje priorizado.</p>
+    <p class="lede">El argumento del proyecto es la <strong>privacidad (RGPD)</strong>: los logs nunca salen de la máquina. Todo el análisis y la generación del informe ocurren en el propio equipo, con un modelo pequeño corriendo en local.</p>
+  </section>
+
+  <!-- 02 PRINCIPIO -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">02</span><h2>El principio de diseño</h2><span class="sec-line"></span></div>
+    <div class="split">
+      <div class="col code">
+        <span class="tagk">El código detecta</span>
+        <h4>Detección determinista (Python)</h4>
+        <p>Contar fallos, cruzar IPs, revisar horarios: todo eso lo hace código Python determinista. Nunca el modelo. Resultados fiables y reproducibles.</p>
+      </div>
+      <div class="col ai">
+        <span class="tagk">La IA narra</span>
+        <h4>Redacción con LLM local</h4>
+        <p>El modelo local solo <strong>redacta y prioriza</strong> el informe a partir de los hallazgos ya detectados. No detecta nada por su cuenta.</p>
+      </div>
+    </div>
+    <p class="motivo"><b>Por qué:</b> el modelo objetivo es pequeño (~4B, límite de 4 GB de VRAM) y no razona bien con conteos ni timestamps. Este reparto también imita cómo funcionan los productos SOC reales: <b>la IA asiste al detector, no lo sustituye.</b></p>
+  </section>
+
+  <!-- 03 CÓMO FUNCIONA -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Cómo funciona</h2><span class="sec-line"></span></div>
+    <div class="flow">
+      <div class="step"><span class="sn">01</span><span class="st">Parseo del log</span><div class="sd">Lectura y estructura del log (solo lectura).</div></div>
+      <div class="step"><span class="sn">02</span><span class="st">Detección (Python)</span><div class="sd">Detectores deterministas de patrones de ataque.</div></div>
+      <div class="step"><span class="sn">03</span><span class="st">MITRE ATT&amp;CK</span><div class="sd">Mapeo de hallazgos a técnicas conocidas.</div></div>
+      <div class="step"><span class="sn">04</span><span class="st">Informe (LLM)</span><div class="sd">El modelo local redacta y prioriza.</div></div>
+      <div class="step"><span class="sn">05</span><span class="st">Auditoría</span><div class="sd">Cada paso se registra en <code>audit.jsonl</code>.</div></div>
+    </div>
+    <p class="motivo" style="margin-top:18px">El modelo corre en LM Studio (API compatible con OpenAI, en <code>localhost:1234</code>). Si LM Studio está apagado, el agente <b>degrada a un informe de plantilla</b> en vez de romperse.</p>
+  </section>
+
+  <!-- 04 PRINCIPIOS -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Principios de diseño</h2><span class="sec-line"></span></div>
+    <div class="feats">
+      <div class="feat"><h4>Solo datos sintéticos</h4><p>Nunca logs, IPs ni datos personales reales. Las IPs de prueba son de rangos de documentación (RFC 5737).</p></div>
+      <div class="feat"><h4>Solo defensivo</h4><p>Blue team: triaje, detección e informe. Nada ofensivo.</p></div>
+      <div class="feat"><h4>Solo lectura</h4><p>El agente lee logs; no ejecuta comandos del sistema operativo.</p></div>
+      <div class="feat"><h4>Todo en local</h4><p>Los datos no salen de la máquina. Privacidad por diseño (RGPD).</p></div>
+      <div class="feat"><h4>Auditable</h4><p>Cada paso del agente queda registrado en <code>audit.jsonl</code> (JSON Lines).</p></div>
+    </div>
+  </section>
+
+  <!-- 05 STACK -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Stack</h2><span class="sec-line"></span></div>
+    <div class="stack">
+      <div class="group"><h4>Detección</h4><ul><li>Python (determinista)</li><li>Parseo de logs</li><li>Detectores de patrones</li></ul></div>
+      <div class="group"><h4>Inteligencia</h4><ul><li>LLM local (~4B, Q4)</li><li>LM Studio (API OpenAI)</li><li>Qwen3 / Gemma / Llama 3.2</li></ul></div>
+      <div class="group"><h4>Marco</h4><ul><li>MITRE ATT&amp;CK</li><li>Informe priorizado</li><li>Degradación sin IA</li></ul></div>
+      <div class="group"><h4>Trazabilidad</h4><ul><li>Auditoría JSON Lines</li><li>Datos sintéticos (RFC 5737)</li><li>Ejecución offline</li></ul></div>
+    </div>
+  </section>
+
+  <!-- 06 CAPTURAS -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Capturas</h2><span class="sec-line"></span></div>
+    <div class="empty">
+      <div class="big">🚧</div>
+      <p>Proyecto en construcción. En cuanto el agente esté funcionando, aquí irán las capturas del informe generado y del registro de auditoría.</p>
+    </div>
+  </section>
+
+  <!-- 07 ROADMAP -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Roadmap</h2><span class="sec-line"></span></div>
+    <div class="roadmap">
+      <div class="rm"><span class="n">01</span><p><strong>Harness de evaluación:</strong> ejecutar el informe N veces y medir los aciertos del modelo (que mencione las IPs detectadas, estructura válida, sin inventar). Es la pieza que más diferencia el proyecto.</p></div>
+      <div class="rm"><span class="n">02</span><p><strong>Más fuentes:</strong> soporte para logs de firewall y eventos de Windows.</p></div>
+      <div class="rm"><span class="n">03</span><p><strong>Modo autónomo:</strong> un "bucle autónomo" opcional para comparar con el flujo orquestado.</p></div>
+    </div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="reveal">
+    <div class="empty" style="border-style:solid">
+      <p style="margin-bottom:16px">Este proyecto está en desarrollo. Vuelve pronto para ver el agente funcionando.</p>
+      <a class="btn btn-ghost" href="index.html#projects" style="display:inline-flex">← Otros proyectos</a>
+    </div>
+  </section>
+
+</main>
+
+<footer><div class="wrap foot"><span>© 2026 Joaquín Luis García · Almería, ES</span><span>caso de proyecto — sys/sec</span></div></footer>
+
+<script>
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const root = document.documentElement, tbtn = document.getElementById('theme');
+const sun = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const moon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function setTheme(t){ root.setAttribute('data-theme', t); tbtn.innerHTML = t==='dark' ? moon : sun; }
+setTheme('dark');
+tbtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='dark' ? 'light' : 'dark'));
+
+const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+(function(){
+  const c = document.getElementById('net'); if(!c) return;
+  const ctx = c.getContext('2d'); let w,h,dpr,nodes=[],pkts=[],raf;
+  const COUNT = 16, LINK = 200;
+  function color(){ return getComputedStyle(document.body).getPropertyValue('--net').trim() || 'rgba(94,234,212,1)'; }
+  function rgba(a){ const base=color(); return base.replace(/[\d.]+\)$/,a+')'); }
+  function resize(){ dpr=Math.min(window.devicePixelRatio||1,2); w=c.clientWidth=innerWidth; h=c.clientHeight=innerHeight; c.width=w*dpr; c.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  function init(){ nodes=[]; for(let i=0;i<COUNT;i++) nodes.push({x:Math.random()*w,y:Math.random()*h*.8,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22}); pkts=[]; for(let i=0;i<7;i++) pkts.push({a:(Math.random()*COUNT)|0,b:(Math.random()*COUNT)|0,t:Math.random()}); }
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h*.85)n.vy*=-1; }
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){ const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy); if(d<LINK){ ctx.strokeStyle=rgba(0.10*(1-d/LINK)); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); } }
+    for(const n of nodes){ ctx.fillStyle=rgba(0.5); ctx.beginPath(); ctx.arc(n.x,n.y,1.7,0,7); ctx.fill(); }
+    for(const p of pkts){ p.t+=0.006; if(p.t>=1){ p.t=0; p.a=(Math.random()*nodes.length)|0; p.b=(Math.random()*nodes.length)|0; } const A=nodes[p.a], B=nodes[p.b]; if(!A||!B) continue; const x=A.x+(B.x-A.x)*p.t, y=A.y+(B.y-A.y)*p.t; ctx.fillStyle=rgba(0.9); ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill(); ctx.fillStyle=rgba(0.18); ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill(); }
+    raf=requestAnimationFrame(frame);
+  }
+  function start(){ resize(); init(); cancelAnimationFrame(raf); frame(); if(reduce) cancelAnimationFrame(raf); }
+  addEventListener('resize', ()=>{ resize(); init(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) cancelAnimationFrame(raf); else if(!reduce){ raf=requestAnimationFrame(frame);} });
+  start();
+})();
+</script>
+</body>
+</html>
