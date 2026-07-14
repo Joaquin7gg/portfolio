@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tagether — Red social de eventos · Joaquín Luis García</title>
+<meta name="description" content="Tagether: red social de eventos (Android e iOS). React Native, Supabase con RLS, tiempo real, mapas y OTA. Caso completo del proyecto." />
+<meta name="theme-color" content="#0C141F" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root, [data-theme="dark"]{
+    --bg:#0C141F; --bg-grad:#0F1A26; --panel:#13202E; --panel-2:#172838;
+    --border:#233344; --border-soft:#1B2937;
+    --text:#E4ECF5; --muted:#8497AD; --muted-dim:#5C6E83;
+    --accent:#5EEAD4; --accent-strong:#2DD4BF; --accent-ink:#06231f; --warm:#F4B860;
+    --net:rgba(94,234,212,1);
+  }
+  [data-theme="light"]{
+    --bg:#EDF2F7; --bg-grad:#F6F9FC; --panel:#FFFFFF; --panel-2:#F4F8FB;
+    --border:#D3DEE9; --border-soft:#E1E9F1;
+    --text:#16242F; --muted:#516274; --muted-dim:#8497A8;
+    --accent:#0E9E8E; --accent-strong:#0B8576; --accent-ink:#ffffff; --warm:#C77D1A;
+    --net:rgba(14,158,142,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:linear-gradient(180deg,var(--bg-grad),var(--bg) 460px);
+    color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .4s,color .4s}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+  #net{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%);
+    -webkit-mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%)}
+  [data-theme="light"] #net{opacity:.38}
+
+  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 72%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border-soft)}
+  .bar{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .handle{font-family:"Space Grotesk";font-weight:700;letter-spacing:.04em;font-size:15px;display:flex;align-items:center;gap:6px}
+  .handle b{color:var(--accent)}
+  .handle small{font-family:"IBM Plex Mono";font-weight:400;font-size:12px;color:var(--muted)}
+  .back{font-size:13.5px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;transition:color .2s,gap .18s}
+  .back:hover{color:var(--text);gap:10px}
+  .tools{display:flex;align-items:center;gap:14px}
+  .theme-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);cursor:pointer;display:grid;place-items:center;transition:transform .2s,border-color .2s}
+  .theme-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .theme-btn svg{width:17px;height:17px}
+
+  .phero{padding:40px 0 8px}
+  .hero-banner{border-radius:16px;overflow:hidden;border:1px solid var(--border);margin-bottom:30px;box-shadow:0 26px 64px -32px rgba(0,0,0,.75)}
+  .eyebrow{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--accent);letter-spacing:.05em;margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.6}
+  .badge-play{display:inline-flex;align-items:center;gap:7px;font-family:"IBM Plex Mono";font-size:11px;color:var(--accent-ink);
+    background:var(--accent);padding:4px 10px;border-radius:20px;letter-spacing:.04em}
+  h1{font-family:"Space Grotesk";font-weight:700;font-size:clamp(2.1rem,5vw,3.4rem);line-height:1.04;letter-spacing:-.02em}
+  .subtitle{font-family:"Space Grotesk";font-weight:500;font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--muted);margin-top:16px;max-width:60ch}
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .chip{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);border:1px solid var(--border-soft);
+    background:color-mix(in srgb,var(--panel) 60%,transparent);padding:7px 12px;border-radius:8px}
+  .chip b{color:var(--accent);font-weight:500}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .btn{font-size:14px;font-weight:500;padding:11px 20px;border-radius:9px;border:1px solid var(--border);
+    transition:transform .18s,border-color .2s,background .2s;display:inline-flex;align-items:center;gap:9px;background:transparent;color:var(--text);cursor:pointer}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent-strong)}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  section{padding:44px 0}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:26px}
+  .sec-num{font-family:"IBM Plex Mono";font-size:13px;color:var(--accent);opacity:.85}
+  h2{font-family:"Space Grotesk";font-weight:600;font-size:clamp(1.5rem,3.2vw,2rem);letter-spacing:-.01em}
+  .sec-line{flex:1;height:1px;background:var(--border-soft);align-self:center}
+  .lede{max-width:70ch;color:var(--text);opacity:.88;font-size:16px}
+  .lede+.lede{margin-top:15px}
+  .lede strong{opacity:1;font-weight:600}
+
+  .feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .feat{border:1px solid var(--border-soft);border-radius:12px;padding:20px;background:color-mix(in srgb,var(--panel) 55%,transparent);transition:transform .2s,border-color .2s}
+  .feat:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
+  .feat h4{font-family:"Space Grotesk";font-weight:600;font-size:1.02rem;margin-bottom:7px}
+  .feat p{font-size:14px;color:var(--text);opacity:.82}
+
+  .stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .group{border:1px solid var(--border-soft);border-radius:12px;padding:22px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .group h4{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent);letter-spacing:.06em;margin-bottom:14px;text-transform:uppercase}
+  .group ul{list-style:none;display:flex;flex-wrap:wrap;gap:7px}
+  .group li{font-size:12.5px;color:var(--text);opacity:.85;border:1px solid var(--border);padding:5px 10px;border-radius:7px;background:var(--panel)}
+
+  .challenges{display:grid;gap:14px}
+  .chal{border:1px solid var(--border-soft);border-left:3px solid var(--accent);border-radius:12px;padding:20px 24px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .chal h3{font-family:"Space Grotesk";font-weight:600;font-size:1.08rem;margin-bottom:8px;display:flex;gap:10px;align-items:baseline}
+  .chal h3 .cn{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent)}
+  .chal p{font-size:14.5px;color:var(--text);opacity:.85;max-width:82ch}
+
+  .phones{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+  .phone{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0a1019;cursor:zoom-in;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .phone:hover{transform:translateY(-5px);border-color:color-mix(in srgb,var(--accent) 40%,var(--border));box-shadow:0 18px 38px -22px rgba(0,0,0,.6)}
+  .phone img{width:100%;display:block}
+
+  .numbers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+  .ntile{border:1px solid var(--border-soft);border-radius:12px;padding:24px 20px;text-align:center;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .ntile .num{font-family:"Space Grotesk";font-weight:700;font-size:2.2rem;color:var(--accent);line-height:1}
+  .ntile .lbl{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);margin-top:10px;letter-spacing:.03em}
+
+  .note{border:1px solid color-mix(in srgb,var(--warm) 35%,var(--border));border-left:3px solid var(--warm);
+    background:color-mix(in srgb,var(--warm) 6%,transparent);border-radius:12px;padding:20px 24px;max-width:74ch}
+  .note .k{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--warm);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:8px}
+
+  .lightbox{position:fixed;inset:0;background:rgba(4,8,14,.93);z-index:200;display:none;grid-template-rows:1fr auto;place-items:center;padding:26px;cursor:zoom-out;backdrop-filter:blur(3px)}
+  .lightbox.open{display:grid}
+  .lightbox img{max-width:94vw;max-height:86vh;border-radius:10px;border:1px solid var(--border);cursor:default}
+  .lightbox .lcap{margin-top:14px;font-family:"IBM Plex Mono";font-size:13px;color:var(--muted);text-align:center;max-width:70ch}
+  .lightbox .close{position:fixed;top:18px;right:22px;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text);font-size:20px;cursor:pointer;display:grid;place-items:center}
+
+  .foot-cta{border:1px solid var(--border);border-radius:16px;padding:34px;text-align:center;background:linear-gradient(180deg,var(--panel),var(--panel-2));margin-top:10px}
+  .foot-cta h3{font-family:"Space Grotesk";font-weight:600;font-size:1.35rem;margin-bottom:8px}
+  .foot-cta p{color:var(--muted);margin-bottom:22px}
+
+  footer{border-top:1px solid var(--border-soft);padding:26px 0;margin-top:40px}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted-dim)}
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  @media (max-width:760px){section{padding:38px 0}.phero{padding:26px 0 6px}.phones{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
+</style>
+</head>
+<body>
+<canvas id="net" aria-hidden="true"></canvas>
+
+<header>
+  <div class="wrap bar">
+    <a class="back" href="index.html">← Volver al portfolio</a>
+    <div class="tools">
+      <div class="handle">JLG<b>·</b><small>sys/sec</small></div>
+      <button class="theme-btn" id="theme" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema"></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="phero" id="top">
+    <div class="hero-banner"><img src="tagether/hero-tagether.jpg" alt="Tagether — red social de eventos" fetchpriority="high"></div>
+    <div class="eyebrow mono"><span class="badge-play">🚀 Google Play · pruebas cerradas</span> Android + iOS · desarrollo en pareja con IA</div>
+    <h1>Tagether</h1>
+    <p class="subtitle">Red social de eventos: <strong style="color:var(--text)">crea un plan, descubre lo que pasa cerca de ti y organizaos en la sala del evento.</strong> Cada plan tiene su ficha, su punto en el mapa, su lista de asistentes y su chat.</p>
+    <div class="meta-row">
+      <span class="chip">Estado: <b>en pruebas cerradas (2026)</b></span>
+      <span class="chip">Plataformas: <b>Android + iOS</b></span>
+      <span class="chip">Rol: <b>desarrollo de producto (idea de terceros)</b></span>
+    </div>
+    <div class="cta">
+      <a class="btn btn-ghost" href="index.html">← Volver al portfolio</a>
+    </div>
+  </section>
+
+  <!-- 01 QUÉ ES -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Qué es</h2><span class="sec-line"></span></div>
+    <p class="lede">Organizar un plan hoy significa un grupo de WhatsApp caótico: nadie sabe quién va, la ubicación se pierde entre mensajes y las fotos acaban desperdigadas.</p>
+    <p class="lede"><strong>Tagether le da a cada plan un sitio propio.</strong> Cada evento tiene su ficha, su punto en el mapa, su lista de asistentes y su propia sala de chat. Abres la app y ves qué está pasando a tu alrededor —una barbacoa, un partido, un concierto— y te apuntas con un toque.</p>
+  </section>
+
+  <!-- 02 QUÉ HACE -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Qué hace</h2><span class="sec-line"></span></div>
+    <div class="feats">
+      <div class="feat"><h4>Descubrir</h4><p>Feed y mapa de eventos cercanos, con filtros por distancia y fecha.</p></div>
+      <div class="feat"><h4>Crear</h4><p>Eventos públicos o privados, con aforo, co-administradores, invitaciones y solicitudes de acceso que el organizador acepta o rechaza.</p></div>
+      <div class="feat"><h4>Quedar</h4><p>Confirmación de asistencia y sala de chat por evento, con respuestas, menciones @, fotos con pie y filtro de insultos.</p></div>
+      <div class="feat"><h4>Socializar</h4><p>Perfiles con galería de fotos, seguidores, mensajes privados y compartir eventos y perfiles dentro y fuera de la app.</p></div>
+      <div class="feat"><h4>Lo que no se ve</h4><p>Notificaciones push, bloqueos, reportes y moderación de imágenes con IA.</p></div>
+    </div>
+  </section>
+
+  <!-- 03 TÉCNICO -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Lo interesante a nivel técnico</h2><span class="sec-line"></span></div>
+    <div class="challenges">
+      <div class="chal"><h3><span class="cn">01</span> La seguridad vive en el servidor, no en la app</h3><p>Row Level Security de PostgreSQL, funciones <code>SECURITY DEFINER</code> y triggers: la ubicación exacta de un evento privado solo se sirve a quien tiene permiso, el bucket de fotos es privado con URLs firmadas y los nombres de autor de los mensajes no son falsificables. Un cliente modificado no puede saltarse las reglas porque las reglas no están en el cliente.</p></div>
+      <div class="chal"><h3><span class="cn">02</span> Tiempo real</h3><p>Con Supabase Realtime: mensajes, comentarios y contadores se actualizan solos, sin recargar.</p></div>
+      <div class="chal"><h3><span class="cn">03</span> Entrega continua sin pasar por la tienda</h3><p>EAS Update (OTA): un arreglo llega a los testers en minutos en vez de esperar días a una revisión de la tienda.</p></div>
+      <div class="chal"><h3><span class="cn">04</span> Paridad real entre Android e iOS</h3><p>Resolver dónde divergen de verdad —gestos que se pisan, modales que no montan igual, notificaciones con formatos de payload distintos— y no solo "que compile en los dos".</p></div>
+      <div class="chal"><h3><span class="cn">05</span> Privacidad por diseño</h3><p>Los eventos privados nunca aparecen en el mapa general y su ubicación se difumina a un radio hasta que eres miembro.</p></div>
+    </div>
+  </section>
+
+  <!-- 04 CAPTURAS -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Capturas</h2><span class="sec-line"></span></div>
+    <div class="phones" id="gallery">
+      <figure class="phone"><img src="tagether/captura-01.jpg" alt="Inicio de Tagether" loading="lazy"></figure>
+      <figure class="phone"><img src="tagether/captura-02.jpg" alt="Feed de eventos cercanos" loading="lazy"></figure>
+      <figure class="phone"><img src="tagether/captura-03.jpg" alt="Crear un evento" loading="lazy"></figure>
+      <figure class="phone"><img src="tagether/captura-04.jpg" alt="Sala de chat del evento" loading="lazy"></figure>
+      <figure class="phone"><img src="tagether/captura-05.jpg" alt="Mapa de eventos" loading="lazy"></figure>
+      <figure class="phone"><img src="tagether/captura-06.jpg" alt="Notificaciones" loading="lazy"></figure>
+      <figure class="phone"><img src="tagether/captura-07.jpg" alt="Perfil personal" loading="lazy"></figure>
+    </div>
+  </section>
+
+  <!-- 05 NÚMEROS -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Números</h2><span class="sec-line"></span></div>
+    <div class="numbers">
+      <div class="ntile"><div class="num">30</div><div class="lbl">PANTALLAS (expo-router)</div></div>
+      <div class="ntile"><div class="num">24</div><div class="lbl">TABLAS EN SUPABASE (con RLS)</div></div>
+      <div class="ntile"><div class="num">2</div><div class="lbl">PLATAFORMAS · 1 CÓDIGO BASE</div></div>
+      <div class="ntile"><div class="num">2</div><div class="lbl">TIENDAS · GOOGLE PLAY + TESTFLIGHT</div></div>
+    </div>
+  </section>
+
+  <!-- MI APORTACIÓN -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Mi aportación</h2><span class="sec-line"></span></div>
+    <p class="lede">Desarrollo del producto de principio a fin usando IA como copiloto: definición de las reglas de negocio, decisiones de arquitectura y de interfaz, pruebas en dispositivo real (Android e iOS), auditorías de seguridad y estabilidad, y todo el ciclo de publicación —builds de EAS, ficha y gráficos de tienda, pruebas internas y cerradas, TestFlight—.</p>
+    <div class="note" style="margin-top:18px"><span class="k">Honestidad</span>La idea y el concepto original de la app no son míos: mi trabajo es llevarla de la idea a una app instalada y funcionando en manos de gente real.</div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="reveal">
+    <div class="foot-cta">
+      <h3>En fase de pruebas</h3>
+      <p>Tagether está en Google Play en pruebas cerradas (Android e iOS).</p>
+      <div class="cta" style="justify-content:center">
+        <a class="btn btn-ghost" href="index.html#projects">← Otros proyectos</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="close" id="lbClose" aria-label="Cerrar">✕</button>
+  <img id="lbImg" src="" alt="">
+  <div class="lcap" id="lbCap"></div>
+</div>
+
+<footer><div class="wrap foot"><span>© 2026 Joaquín Luis García · Almería, ES</span><span>caso de proyecto — sys/sec</span></div></footer>
+
+<script>
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const root = document.documentElement, tbtn = document.getElementById('theme');
+const sun = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const moon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function setTheme(t){ root.setAttribute('data-theme', t); tbtn.innerHTML = t==='dark' ? moon : sun; }
+setTheme('dark');
+tbtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='dark' ? 'light' : 'dark'));
+
+const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+(function(){
+  const lb=document.getElementById('lightbox'), img=document.getElementById('lbImg'), cap=document.getElementById('lbCap'), close=document.getElementById('lbClose');
+  function open(src,alt){ img.src=src; img.alt=alt; cap.textContent=alt; lb.classList.add('open'); lb.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function hide(){ lb.classList.remove('open'); lb.setAttribute('aria-hidden','true'); document.body.style.overflow=''; img.src=''; }
+  document.querySelectorAll('#gallery .phone').forEach(fig=>{ const i=fig.querySelector('img'); fig.addEventListener('click',()=>open(i.getAttribute('src'), i.getAttribute('alt'))); });
+  lb.addEventListener('click',e=>{ if(e.target!==img) hide(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') hide(); });
+})();
+
+(function(){
+  const c = document.getElementById('net'); if(!c) return;
+  const ctx = c.getContext('2d'); let w,h,dpr,nodes=[],pkts=[],raf;
+  const COUNT = 16, LINK = 200;
+  function color(){ return getComputedStyle(document.body).getPropertyValue('--net').trim() || 'rgba(94,234,212,1)'; }
+  function rgba(a){ const base=color(); return base.replace(/[\d.]+\)$/,a+')'); }
+  function resize(){ dpr=Math.min(window.devicePixelRatio||1,2); w=c.clientWidth=innerWidth; h=c.clientHeight=innerHeight; c.width=w*dpr; c.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  function init(){ nodes=[]; for(let i=0;i<COUNT;i++) nodes.push({x:Math.random()*w,y:Math.random()*h*.8,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22}); pkts=[]; for(let i=0;i<7;i++) pkts.push({a:(Math.random()*COUNT)|0,b:(Math.random()*COUNT)|0,t:Math.random()}); }
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h*.85)n.vy*=-1; }
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){ const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy); if(d<LINK){ ctx.strokeStyle=rgba(0.10*(1-d/LINK)); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); } }
+    for(const n of nodes){ ctx.fillStyle=rgba(0.5); ctx.beginPath(); ctx.arc(n.x,n.y,1.7,0,7); ctx.fill(); }
+    for(const p of pkts){ p.t+=0.006; if(p.t>=1){ p.t=0; p.a=(Math.random()*nodes.length)|0; p.b=(Math.random()*nodes.length)|0; } const A=nodes[p.a], B=nodes[p.b]; if(!A||!B) continue; const x=A.x+(B.x-A.x)*p.t, y=A.y+(B.y-A.y)*p.t; ctx.fillStyle=rgba(0.9); ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill(); ctx.fillStyle=rgba(0.18); ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill(); }
+    raf=requestAnimationFrame(frame);
+  }
+  function start(){ resize(); init(); cancelAnimationFrame(raf); frame(); if(reduce) cancelAnimationFrame(raf); }
+  addEventListener('resize', ()=>{ resize(); init(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) cancelAnimationFrame(raf); else if(!reduce){ raf=requestAnimationFrame(frame);} });
+  start();
+})();
+</script>
+</body>
+</html>
