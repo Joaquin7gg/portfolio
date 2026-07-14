@@ -152,6 +152,14 @@
   .node.feature{cursor:pointer}
   .node.feature .node-links{position:relative;z-index:3}
 
+  /* card with banner media */
+  .node.has-media{padding:0;overflow:hidden}
+  .node.has-media::after{display:none}
+  .node-media{width:100%;height:250px;overflow:hidden;border-bottom:1px solid var(--border);background:#0a1019}
+  .node-media img{width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .35s}
+  .node.has-media:hover .node-media img{transform:scale(1.03)}
+  .node.has-media .node-body{padding:24px;display:flex;flex-direction:column;flex:1}
+
   /* stack */
   .stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
   .group{border:1px solid var(--border-soft);border-radius:12px;padding:20px;background:color-mix(in srgb,var(--panel) 55%,transparent);transition:border-color .2s}
@@ -269,8 +277,20 @@
         <div class="node-links"><a href="proyecto-intermodular.html">Ver caso completo →</a><a class="sub" href="https://github.com/Joaquin7gg/proyecto-intermodular" target="_blank" rel="noopener">Repositorio</a></div>
       </article>
 
+      <article class="node feature has-media">
+        <a class="node-cover" href="tardeo.html" aria-label="Ver caso completo de Tardeo"></a>
+        <div class="node-media"><img src="tardeo/hero-tardeo.jpg" alt="Tardeo — app de planes de ocio con IA" loading="lazy"></div>
+        <div class="node-body">
+          <div class="node-top"><span class="node-id mono">srv-02 · app móvil · IA</span><span class="stat live mono">Google Play</span></div>
+          <h3>Tardeo — planes de ocio con IA</h3>
+          <p>App móvil (Android, ES/EN) publicada en Google Play que genera planes de ocio reales y personalizados en segundos con IA generativa: sitios verificados de tu zona, adaptados a tu tiempo, presupuesto, compañía y al clima. Proyecto individual de principio a fin: producto, full-stack, IA y publicación.</p>
+          <div class="tags"><span class="tag">React Native · Expo</span><span class="tag">Gemini AI</span><span class="tag">Node · Serverless</span><span class="tag">Google Places</span><span class="tag accent-tag">Publicada en Google Play</span></div>
+          <div class="node-links"><a href="tardeo.html">Ver caso completo →</a><a class="sub" href="https://play.google.com/store/apps/details?id=com.joaquinluisgarcia.tardeo" target="_blank" rel="noopener">Google Play ↗</a></div>
+        </div>
+      </article>
+
       <article class="node">
-        <div class="node-top"><span class="node-id mono">srv-02 · hardware/sec</span><span class="stat live mono">en línea</span></div>
+        <div class="node-top"><span class="node-id mono">srv-03 · hardware/sec</span><span class="stat live mono">en línea</span></div>
         <h3>Manual de hardware y ciberseguridad</h3>
         <p>Web de documentación técnica sobre fundamentos de hardware: montaje y configuración de equipos, análisis de componentes, benchmarks, UEFI y una introducción práctica a la ciberseguridad con Kali Linux.</p>
         <div class="tags"><span class="tag">HTML / CSS</span><span class="tag">UEFI</span><span class="tag">Kali Linux</span><span class="tag">Documentación</span></div>
@@ -278,20 +298,13 @@
       </article>
 
       <article class="node">
-        <div class="node-top"><span class="node-id mono">srv-03 · web app</span><span class="stat live mono">en línea</span></div>
+        <div class="node-top"><span class="node-id mono">srv-04 · web app</span><span class="stat live mono">en línea</span></div>
         <h3>Star Wars Collection</h3>
         <p>Catálogo web de una colección personal (figuras, libros, cómics y videojuegos), con ~120 piezas catalogadas. SPA construida sin frameworks: renderizado dinámico del DOM, navegación por secciones, modales de detalle y tema oscuro propio, con diseño responsive en CSS Grid.</p>
         <div class="tags"><span class="tag">JavaScript (vanilla)</span><span class="tag">Vite</span><span class="tag">CSS Grid</span><span class="tag">SPA sin frameworks</span></div>
         <div class="node-links"><a href="https://inventariopersonal.netlify.app/" target="_blank" rel="noopener">Ver web →</a><a class="sub" href="https://github.com/Joaquin7gg/inventariopersonalSW" target="_blank" rel="noopener">Repo</a></div>
       </article>
 
-      <article class="node">
-        <div class="node-top"><span class="node-id mono">srv-04 · aplicación</span><span class="stat ok mono">en repositorio</span></div>
-        <h3>Aplicación Tardeo</h3>
-        <p>Aplicación para descubrir y organizar planes de tardeo: locales, horarios y propuestas para salir. Desarrollada con apoyo de IA (Claude), usando la asistencia como copiloto para diseñar, iterar y resolver problemas más rápido. <!-- TODO: ajusta a lo que hace tu proyecto --></p>
-        <div class="tags"><span class="tag">HTML / CSS</span><span class="tag">JavaScript</span><span class="tag accent-tag">Desarrollo con IA · Claude</span></div>
-        <div class="node-links"><a href="https://github.com/Joaquin7gg" target="_blank" rel="noopener">Ver repositorio →</a></div>
-      </article>
 
       <article class="node">
         <div class="node-top"><span class="node-id mono">srv-05 · scripting</span><span class="stat ok mono">en repositorio</span></div>
