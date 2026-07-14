@@ -148,9 +148,13 @@
   .feature::after{content:"DESTACADO";position:absolute;top:16px;right:-34px;transform:rotate(45deg);background:var(--warm);color:#2a1c05;font-family:"IBM Plex Mono";font-size:9.5px;letter-spacing:.1em;padding:4px 40px}
 
   /* clickable card (stretched link) */
-  .node-cover{position:absolute;inset:0;z-index:2;border-radius:14px}
-  .node.feature{cursor:pointer}
-  .node.feature .node-links{position:relative;z-index:3}
+  .node-cover{position:absolute;inset:0;z-index:2;border-radius:14px;cursor:pointer}
+  .node .node-links{position:relative;z-index:3}
+
+  /* app icon next to title */
+  .node-title{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .node-title h3{margin:0}
+  .app-icon{width:42px;height:42px;border-radius:11px;flex:none;border:1px solid var(--border-soft)}
 
   /* card with banner media */
   .node.has-media{padding:0;overflow:hidden}
@@ -277,28 +281,22 @@
         <div class="node-links"><a href="proyecto-intermodular.html">Ver caso completo →</a><a class="sub" href="https://github.com/Joaquin7gg/proyecto-intermodular" target="_blank" rel="noopener">Repositorio</a></div>
       </article>
 
-      <article class="node feature has-media">
+      <article class="node">
         <a class="node-cover" href="tardeo.html" aria-label="Ver caso completo de Tardeo"></a>
-        <div class="node-media"><img src="tardeo/hero-tardeo.jpg" alt="Tardeo — app de planes de ocio con IA" loading="lazy"></div>
-        <div class="node-body">
-          <div class="node-top"><span class="node-id mono">srv-02 · app móvil · IA</span><span class="stat live mono">Google Play</span></div>
-          <h3>Tardeo — planes de ocio con IA</h3>
-          <p>App móvil (Android, ES/EN) publicada en Google Play que genera planes de ocio reales y personalizados en segundos con IA generativa: sitios verificados de tu zona, adaptados a tu tiempo, presupuesto, compañía y al clima. Proyecto individual de principio a fin: producto, full-stack, IA y publicación.</p>
-          <div class="tags"><span class="tag">React Native · Expo</span><span class="tag">Gemini AI</span><span class="tag">Node · Serverless</span><span class="tag">Google Places</span><span class="tag accent-tag">Publicada en Google Play</span></div>
-          <div class="node-links"><a href="tardeo.html">Ver caso completo →</a><a class="sub" href="https://play.google.com/store/apps/details?id=com.joaquinluisgarcia.tardeo" target="_blank" rel="noopener">Google Play ↗</a></div>
-        </div>
+        <div class="node-top"><span class="node-id mono">srv-02 · app móvil · IA</span><span class="stat live mono">Google Play</span></div>
+        <div class="node-title"><img class="app-icon" src="tardeo/icon.png" alt="Icono de Tardeo"><h3>Tardeo — planes de ocio con IA</h3></div>
+        <p>App móvil (Android, ES/EN) publicada en Google Play que genera planes de ocio reales y personalizados en segundos con IA generativa: sitios verificados de tu zona, adaptados a tu tiempo, presupuesto, compañía y al clima. Proyecto individual de principio a fin: producto, full-stack, IA y publicación.</p>
+        <div class="tags"><span class="tag">React Native · Expo</span><span class="tag">Gemini AI</span><span class="tag">Node · Serverless</span><span class="tag">Google Places</span><span class="tag accent-tag">Publicada en Google Play</span></div>
+        <div class="node-links"><a href="tardeo.html">Ver caso completo →</a><a class="sub" href="https://play.google.com/store/apps/details?id=com.joaquinluisgarcia.tardeo" target="_blank" rel="noopener">Google Play ↗</a></div>
       </article>
 
-      <article class="node feature has-media">
+      <article class="node">
         <a class="node-cover" href="tagether.html" aria-label="Ver caso completo de Tagether"></a>
-        <div class="node-media"><img src="tagether/hero-tagether.jpg" alt="Tagether — red social de eventos" loading="lazy"></div>
-        <div class="node-body">
-          <div class="node-top"><span class="node-id mono">srv-03 · app social · Android+iOS</span><span class="stat ok mono">en pruebas</span></div>
-          <h3>Tagether — red social de eventos</h3>
-          <p>App social (Android e iOS), en Google Play en pruebas cerradas: cada plan tiene su ficha, su punto en el mapa, su lista de asistentes y su sala de chat en tiempo real. React Native + Supabase (PostgreSQL con RLS), mapas y entrega OTA. Desarrollo de producto de principio a fin (idea de terceros).</p>
-          <div class="tags"><span class="tag">React Native · Expo</span><span class="tag">Supabase · PostgreSQL</span><span class="tag">Google Maps</span><span class="tag">Tiempo real · RLS</span><span class="tag accent-tag">Google Play · pruebas cerradas</span></div>
-          <div class="node-links"><a href="tagether.html">Ver caso completo →</a></div>
-        </div>
+        <div class="node-top"><span class="node-id mono">srv-03 · app social · Android+iOS</span><span class="stat ok mono">en pruebas</span></div>
+        <div class="node-title"><img class="app-icon" src="tagether/icon.png" alt="Icono de Tagether"><h3>Tagether — red social de eventos</h3></div>
+        <p>App social (Android e iOS), en Google Play en pruebas cerradas: cada plan tiene su ficha, su punto en el mapa, su lista de asistentes y su sala de chat en tiempo real. React Native + Supabase (PostgreSQL con RLS), mapas y entrega OTA. Desarrollo de producto de principio a fin (idea de terceros).</p>
+        <div class="tags"><span class="tag">React Native · Expo</span><span class="tag">Supabase · PostgreSQL</span><span class="tag">Google Maps</span><span class="tag">Tiempo real · RLS</span><span class="tag accent-tag">Google Play · pruebas cerradas</span></div>
+        <div class="node-links"><a href="tagether.html">Ver caso completo →</a></div>
       </article>
 
       <article class="node">
