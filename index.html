@@ -147,6 +147,11 @@
   .node-links a.sub{color:var(--muted)}.node-links a.sub:hover{color:var(--text)}
   .feature::after{content:"DESTACADO";position:absolute;top:16px;right:-34px;transform:rotate(45deg);background:var(--warm);color:#2a1c05;font-family:"IBM Plex Mono";font-size:9.5px;letter-spacing:.1em;padding:4px 40px}
 
+  /* clickable card (stretched link) */
+  .node-cover{position:absolute;inset:0;z-index:2;border-radius:14px}
+  .node.feature{cursor:pointer}
+  .node.feature .node-links{position:relative;z-index:3}
+
   /* stack */
   .stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
   .group{border:1px solid var(--border-soft);border-radius:12px;padding:20px;background:color-mix(in srgb,var(--panel) 55%,transparent);transition:border-color .2s}
@@ -256,11 +261,12 @@
     <div class="nodes">
 
       <article class="node feature">
+        <a class="node-cover" href="proyecto-intermodular.html" aria-label="Ver caso completo del proyecto intermodular"></a>
         <div class="node-top"><span class="node-id mono">srv-01 · infraestructura</span><span class="stat ok mono">desplegado</span></div>
         <h3>Proyecto intermodular — Infraestructura IT para pyme</h3>
         <p>Diseño e implementación de un entorno IT completo tipo pyme: red segmentada, servicios corporativos, base de datos y arquitectura híbrida en la nube. Incluye documentación técnica e intranet del proyecto. Es mi proyecto más completo y refleja cómo encajo las piezas de una infraestructura real.</p>
         <div class="tags"><span class="tag">VLANs</span><span class="tag">Active Directory</span><span class="tag">DNS</span><span class="tag">IIS</span><span class="tag">FTP</span><span class="tag">MySQL / MariaDB</span><span class="tag">AWS (nivel práctica)</span><span class="tag">Documentación</span></div>
-        <div class="node-links"><a href="https://github.com/Joaquin7gg/proyecto-intermodular" target="_blank" rel="noopener">Ver repositorio →</a></div>
+        <div class="node-links"><a href="proyecto-intermodular.html">Ver caso completo →</a><a class="sub" href="https://github.com/Joaquin7gg/proyecto-intermodular" target="_blank" rel="noopener">Repositorio</a></div>
       </article>
 
       <article class="node">
