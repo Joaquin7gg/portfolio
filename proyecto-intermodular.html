@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Proyecto Intermodular ASIR — Joaquín Luis García</title>
-<meta name="description" content="Caso completo del proyecto intermodular de infraestructura IT: redes segmentadas por VLAN, Active Directory, servicios corporativos, bases de datos y cloud." />
+<meta name="description" content="Caso completo del proyecto intermodular de infraestructura IT: redes segmentadas por VLAN, Active Directory, servicios corporativos, bases de datos y cloud, con capturas del proyecto." />
 <meta name="theme-color" content="#0C141F" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,7 +20,6 @@
     --accent:#5EEAD4; --accent-strong:#2DD4BF; --accent-ink:#06231f;
     --warm:#F4B860;
     --net:rgba(94,234,212,1);
-    --term-bg:#0A1019;
   }
   [data-theme="light"]{
     --bg:#EDF2F7; --bg-grad:#F6F9FC;
@@ -30,7 +29,6 @@
     --accent:#0E9E8E; --accent-strong:#0B8576; --accent-ink:#ffffff;
     --warm:#C77D1A;
     --net:rgba(14,158,142,1);
-    --term-bg:#0A1019;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
@@ -42,6 +40,7 @@
     overflow-x:hidden;transition:background .4s,color .4s;
   }
   a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
   .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
   .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
   :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
@@ -65,12 +64,11 @@
   .theme-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
   .theme-btn svg{width:17px;height:17px}
 
-  /* project hero */
-  .phero{padding:70px 0 20px}
+  .phero{padding:64px 0 12px}
   .eyebrow{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--accent);letter-spacing:.05em;margin-bottom:20px;display:flex;align-items:center;gap:10px}
   .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.6}
   h1{font-family:"Space Grotesk";font-weight:700;font-size:clamp(2.1rem,5vw,3.4rem);line-height:1.04;letter-spacing:-.02em}
-  .subtitle{font-family:"Space Grotesk";font-weight:500;font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--muted);margin-top:16px;max-width:52ch}
+  .subtitle{font-family:"Space Grotesk";font-weight:500;font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--muted);margin-top:16px;max-width:56ch}
   .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
   .chip{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);border:1px solid var(--border-soft);
     background:color-mix(in srgb,var(--panel) 60%,transparent);padding:7px 12px;border-radius:8px}
@@ -83,28 +81,47 @@
   .btn-primary:hover{background:var(--accent-strong)}
   .btn-ghost:hover{border-color:var(--accent)}
 
-  section{padding:46px 0}
-  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:28px}
+  section{padding:44px 0}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:26px}
   .sec-num{font-family:"IBM Plex Mono";font-size:13px;color:var(--accent);opacity:.85}
   h2{font-family:"Space Grotesk";font-weight:600;font-size:clamp(1.5rem,3.2vw,2rem);letter-spacing:-.01em}
   .sec-line{flex:1;height:1px;background:var(--border-soft);align-self:center}
-  .lede{max-width:66ch;color:var(--text);opacity:.88;font-size:16.5px}
-  .lede+.lede{margin-top:16px}
+  .lede{max-width:68ch;color:var(--text);opacity:.88;font-size:16px}
+  .lede+.lede{margin-top:15px}
   .lede strong{opacity:1;font-weight:600}
 
-  .callout{border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));border-left:3px solid var(--accent);
-    background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:12px;padding:22px 24px;max-width:70ch;margin-top:6px}
-  .callout .k{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:8px}
+  /* intro two-col */
+  .intro{display:grid;grid-template-columns:220px 1fr;gap:34px;align-items:center}
+  .portrait{border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 46px -26px rgba(0,0,0,.7)}
+  .portrait img{width:100%;aspect-ratio:1/1;object-fit:cover}
 
+  /* gallery */
+  .gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .shot{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel);cursor:zoom-in;
+    transition:transform .2s,border-color .2s,box-shadow .2s}
+  .shot:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--accent) 40%,var(--border));box-shadow:0 18px 40px -24px rgba(0,0,0,.6)}
+  .shot img{width:100%;height:230px;object-fit:cover;object-position:top;border-bottom:1px solid var(--border-soft)}
+  .shot figcaption{padding:14px 16px;font-size:13.5px;color:var(--muted);display:flex;gap:8px;align-items:flex-start}
+  .shot figcaption::before{content:"▸";color:var(--accent);opacity:.8}
+
+  /* lightbox */
+  .lightbox{position:fixed;inset:0;background:rgba(4,8,14,.93);z-index:200;display:none;
+    grid-template-rows:1fr auto;place-items:center;padding:26px;cursor:zoom-out;backdrop-filter:blur(3px)}
+  .lightbox.open{display:grid}
+  .lightbox img{max-width:94vw;max-height:82vh;border-radius:10px;border:1px solid var(--border);cursor:default}
+  .lightbox .lcap{margin-top:16px;font-family:"IBM Plex Mono";font-size:13px;color:var(--muted);text-align:center;max-width:70ch}
+  .lightbox .close{position:fixed;top:18px;right:22px;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text);font-size:20px;cursor:pointer;display:grid;place-items:center}
+
+  /* tech groups */
   .stack{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
   .group{border:1px solid var(--border-soft);border-radius:12px;padding:22px;background:color-mix(in srgb,var(--panel) 55%,transparent);transition:transform .2s,border-color .2s}
   .group:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
-  .group h4{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent);letter-spacing:.06em;margin-bottom:14px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
-  .group ul{list-style:none;display:flex;flex-direction:column;gap:9px}
-  .group li{font-size:14px;color:var(--text);opacity:.88;padding-left:18px;position:relative}
-  .group li::before{content:"▸";position:absolute;left:0;color:var(--accent);opacity:.7}
+  .group h4{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent);letter-spacing:.06em;margin-bottom:14px;text-transform:uppercase}
+  .group ul{list-style:none;display:flex;flex-wrap:wrap;gap:7px}
+  .group li{font-size:12.5px;color:var(--text);opacity:.85;border:1px solid var(--border);padding:5px 10px;border-radius:7px;background:var(--panel)}
 
-  .learn{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .learn{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
   .lcard{border:1px solid var(--border-soft);border-radius:12px;padding:20px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
   .lcard .n{font-family:"IBM Plex Mono";font-size:12px;color:var(--warm);margin-bottom:8px}
   .lcard p{font-size:14.5px;color:var(--text);opacity:.86}
@@ -120,7 +137,11 @@
   .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
   .reveal.in{opacity:1;transform:none}
   @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
-  @media (max-width:760px){section{padding:40px 0}.phero{padding:48px 0 10px}}
+  @media (max-width:760px){
+    section{padding:38px 0}.phero{padding:44px 0 8px}
+    .intro{grid-template-columns:1fr;gap:22px}.portrait{max-width:200px}
+    .gallery{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
@@ -138,7 +159,7 @@
 
 <main class="wrap">
 
-  <!-- PROJECT HERO -->
+  <!-- HERO -->
   <section class="phero" id="top">
     <div class="eyebrow mono">srv-01 · infraestructura · proyecto intermodular</div>
     <h1>Proyecto Intermodular ASIR</h1>
@@ -155,106 +176,97 @@
     </div>
   </section>
 
-  <!-- 01 RESUMEN -->
+  <!-- 01 MI PROYECTO -->
   <section class="reveal">
-    <div class="sec-head"><span class="sec-num">01</span><h2>Resumen</h2><span class="sec-line"></span></div>
-    <p class="lede">El objetivo principal ha sido construir una <strong>solución tecnológica coherente, funcional y escalable</strong> para un club deportivo estructurado como pequeña-mediana empresa, con varios departamentos. La solución cubre las necesidades de los usuarios y de la administración: conectividad, almacenamiento, servicios corporativos y publicación de recursos.</p>
-    <div class="callout" style="margin-top:22px">
-      <span class="k">Objetivo</span>
-      Integrar en un único entorno todas las piezas de una infraestructura real —hardware, red, sistemas, servicios de directorio, bases de datos y nube— y documentar el proceso de principio a fin.
+    <div class="sec-head"><span class="sec-num">01</span><h2>Mi proyecto</h2><span class="sec-line"></span></div>
+    <div class="intro">
+      <div class="portrait"><img src="capturas/joaquin.jpg" alt="Joaquín Luis García" loading="lazy"></div>
+      <div>
+        <p class="lede">Este proyecto consiste en el diseño e implementación de una <strong>infraestructura IT completa para un club deportivo ficticio</strong>, planteado como un entorno similar al de una pequeña o mediana empresa. Es un proyecto intermodular en el que se trabajan de forma conjunta hardware, redes, sistemas, bases de datos, lenguaje de marcas y computación en la nube.</p>
+        <p class="lede">El objetivo principal ha sido construir una <strong>solución tecnológica coherente, funcional y escalable</strong>, capaz de dar soporte a distintos departamentos: usuarios, administración, conectividad, almacenamiento, servicios corporativos y publicación de recursos.</p>
+      </div>
     </div>
   </section>
 
-  <!-- 02 ALCANCE -->
+  <!-- 02 EXPLICACIÓN -->
   <section class="reveal">
-    <div class="sec-head"><span class="sec-num">02</span><h2>Alcance e integración</h2><span class="sec-line"></span></div>
-    <p class="lede">Es un proyecto <strong>interdisciplinar</strong> que conecta hardware, redes, sistemas, bases de datos, lenguajes de marcas y cloud. Las piezas no van sueltas: la <strong>intranet</strong> se integra en el entorno de servidor, las <strong>bases de datos en la nube</strong> se conectan con la infraestructura local, los <strong>inventarios en XML</strong> documentan los activos de hardware y la <strong>red segmentada por VLAN</strong> soporta el despliegue de los servicios.</p>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Explicación del proyecto</h2><span class="sec-line"></span></div>
+    <p class="lede">Se plantea desde cero la infraestructura informática de una organización: se define el <strong>hardware</strong> necesario, se diseña la <strong>red física y lógica</strong>, se implanta un <strong>entorno cliente-servidor</strong>, se crea una <strong>base de datos</strong> para gestionar los recursos tecnológicos y se amplía la infraestructura con una <strong>arquitectura híbrida en la nube</strong> mediante AWS.</p>
+    <p class="lede">Además, se desarrolla una representación estructurada del inventario tecnológico mediante <strong>XML</strong>, validado con <strong>DTD</strong> y transformado con <strong>XSLT</strong> a HTML, de forma que toda la información del sistema se muestre de manera clara y organizada dentro de la intranet del proyecto.</p>
+    <p class="lede">Una de las partes más importantes ha sido la <strong>relación entre los distintos módulos</strong>: la web de Lenguaje de Marcas se integra como intranet dentro del servidor web; la base de datos se aloja en la nube (Amazon RDS / MySQL) dentro de una arquitectura híbrida; el hardware se incorpora al inventario XML; y la red segmentada por VLANs, distribuida por departamentos, sirve de base para desplegar servidores, clientes y servicios corporativos.</p>
   </section>
 
-  <!-- 03 ARQUITECTURA -->
+  <!-- 03 CAPTURAS -->
   <section class="reveal">
-    <div class="sec-head"><span class="sec-num">03</span><h2>Arquitectura técnica</h2><span class="sec-line"></span></div>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Capturas del proyecto</h2><span class="sec-line"></span></div>
+    <div class="gallery" id="gallery">
+      <figure class="shot"><img src="capturas/esquema.png" alt="Esquema lógico de la infraestructura de red" loading="lazy"><figcaption>Esquema lógico de la infraestructura de red.</figcaption></figure>
+      <figure class="shot"><img src="capturas/intranet.png" alt="Intranet del proyecto integrada en el entorno cliente-servidor" loading="lazy"><figcaption>Intranet desarrollada e integrada en el entorno cliente-servidor.</figcaption></figure>
+      <figure class="shot"><img src="capturas/active-directory.png" alt="Gestión de usuarios, grupos y permisos con Active Directory" loading="lazy"><figcaption>Gestión de usuarios, grupos y permisos con Active Directory.</figcaption></figure>
+      <figure class="shot"><img src="capturas/aws.png" alt="Diagrama de la arquitectura cloud generado con Draw.io" loading="lazy"><figcaption>Diagrama de la arquitectura (Draw.io).</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- 04 TECNOLOGÍAS -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Tecnologías utilizadas</h2><span class="sec-line"></span></div>
     <div class="stack">
-
       <div class="group">
-        <h4>Hardware</h4>
-        <ul>
-          <li>Sobremesas, estaciones de trabajo y portátiles profesionales</li>
-          <li>Servidor principal con RAID 5</li>
-          <li>Switch multicapa y switches de acceso</li>
-          <li>Router y puntos de acceso WiFi</li>
-          <li>SAI (alimentación ininterrumpida)</li>
-        </ul>
+        <h4>Hardware e infraestructura</h4>
+        <ul><li>Sobremesa corporativo</li><li>Workstations</li><li>Portátiles</li><li>Servidor principal</li><li>Switch multicapa</li><li>Switches de acceso</li><li>Router</li><li>Puntos de acceso WiFi</li><li>SAI</li><li>RAID 5</li></ul>
       </div>
-
       <div class="group">
         <h4>Redes</h4>
-        <ul>
-          <li>Diseño en Cisco Packet Tracer</li>
-          <li>Segmentación por VLANs por departamento</li>
-          <li>Enrutamiento inter-VLAN con enlaces trunk</li>
-          <li>WiFi corporativa y de invitados separadas</li>
-        </ul>
+        <ul><li>Cisco Packet Tracer</li><li>VLANs</li><li>Enrutamiento inter-VLAN</li><li>Enlaces trunk</li><li>WiFi corporativa e invitados</li><li>Segmentación por departamentos</li></ul>
       </div>
-
       <div class="group">
         <h4>Sistemas</h4>
-        <ul>
-          <li>Windows Server 2022 y Windows 11 Pro</li>
-          <li>Ubuntu Desktop y Kali Linux</li>
-          <li>Active Directory (usuarios y permisos)</li>
-          <li>DNS, servidor de archivos, impresión, FTP e IIS</li>
-          <li>Automatización con PowerShell</li>
-        </ul>
+        <ul><li>Windows Server 2022</li><li>Windows 11 Pro</li><li>Ubuntu Desktop</li><li>Kali Linux</li><li>VirtualBox</li><li>Active Directory</li><li>DNS</li><li>Servidor de archivos</li><li>Servidor de impresión</li><li>FTP</li><li>IIS</li><li>RDP</li><li>PowerShell</li></ul>
       </div>
-
       <div class="group">
-        <h4>Bases de datos &amp; Cloud</h4>
-        <ul>
-          <li>MySQL / MariaDB con phpMyAdmin</li>
-          <li>AWS (nivel práctica): EC2, S3, RDS, VPC</li>
-          <li>Servidor web Apache</li>
-          <li>Gestión con AWS CLI</li>
-        </ul>
+        <h4>Bases de datos y nube</h4>
+        <ul><li>MySQL / MariaDB</li><li>SQL</li><li>phpMyAdmin</li><li>AWS (nivel práctica)</li><li>Amazon EC2</li><li>Amazon S3</li><li>Amazon RDS (MySQL)</li><li>Amazon VPC</li><li>Apache</li><li>AWS CLI</li></ul>
       </div>
-
       <div class="group">
-        <h4>Web &amp; marcas</h4>
-        <ul>
-          <li>XML con validación DTD</li>
-          <li>Transformación con XSLT</li>
-          <li>Intranet en HTML / CSS</li>
-        </ul>
+        <h4>Lenguaje de marcas</h4>
+        <ul><li>XML</li><li>DTD</li><li>XSLT</li><li>HTML</li><li>CSS</li></ul>
       </div>
-
     </div>
   </section>
 
-  <!-- 04 APRENDIZAJES -->
+  <!-- 05 APRENDIZAJES -->
   <section class="reveal">
-    <div class="sec-head"><span class="sec-num">04</span><h2>Aprendizajes clave</h2><span class="sec-line"></span></div>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Aprendizajes del proyecto</h2><span class="sec-line"></span></div>
     <div class="learn">
-      <div class="lcard"><div class="n mono">01</div><p>Diseño de una infraestructura completa de principio a fin, entendiendo cómo encajan todas las piezas.</p></div>
-      <div class="lcard"><div class="n mono">02</div><p>Integración de tecnologías de distintos módulos en un mismo entorno funcional.</p></div>
-      <div class="lcard"><div class="n mono">03</div><p>Administración práctica de Active Directory: usuarios, permisos y directivas.</p></div>
-      <div class="lcard"><div class="n mono">04</div><p>Importancia de la segmentación por VLAN para el orden y la seguridad de la red.</p></div>
-      <div class="lcard"><div class="n mono">05</div><p>Descubrí un interés añadido por el modelado de datos y el análisis, más allá de la ciberseguridad.</p></div>
+      <div class="lcard"><div class="n mono">01</div><p>Entender de forma práctica cómo se diseña, organiza e implanta una infraestructura IT completa.</p></div>
+      <div class="lcard"><div class="n mono">02</div><p>Relacionar áreas que suelen verse por separado (hardware, red, sistemas, servicios, BBDD y nube) y ver cómo encajan.</p></div>
+      <div class="lcard"><div class="n mono">03</div><p>Reforzar la administración de sistemas: Active Directory, gestión de usuarios y permisos, servicios de red y entorno cliente-servidor.</p></div>
+      <div class="lcard"><div class="n mono">04</div><p>Comprender la importancia de la segmentación por VLANs y la estructura de una red empresarial.</p></div>
+      <div class="lcard"><div class="n mono">05</div><p>Descubrir un interés añadido por las bases de datos y el análisis de datos: modelado, organización y consultas.</p></div>
+      <div class="lcard"><div class="n mono">06</div><p>Mejorar la resolución de problemas ante errores e incidencias reales de una infraestructura amplia.</p></div>
     </div>
   </section>
 
   <!-- CIERRE -->
   <section class="reveal">
     <div class="foot-cta">
-      <h3>¿Quieres ver el detalle técnico?</h3>
-      <p>Todo el proyecto está documentado y publicado en el repositorio.</p>
+      <h3>Repositorio y documentación</h3>
+      <p>Todo el proyecto está documentado y publicado en GitHub.</p>
       <div class="cta" style="justify-content:center">
-        <a class="btn btn-primary" href="https://github.com/Joaquin7gg/proyecto-intermodular" target="_blank" rel="noopener">Ver repositorio ↗</a>
+        <a class="btn btn-primary" href="https://github.com/Joaquin7gg/proyecto-intermodular" target="_blank" rel="noopener">Ir al repositorio ↗</a>
         <a class="btn btn-ghost" href="index.html#projects">← Otros proyectos</a>
       </div>
     </div>
   </section>
 
 </main>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="close" id="lbClose" aria-label="Cerrar">✕</button>
+  <img id="lbImg" src="" alt="">
+  <div class="lcap" id="lbCap"></div>
+</div>
 
 <footer><div class="wrap foot"><span>© 2026 Joaquín Luis García · Almería, ES</span><span>caso de proyecto — sys/sec</span></div></footer>
 
@@ -270,10 +282,25 @@ setTheme('dark');
 tbtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='dark' ? 'light' : 'dark'));
 
 /* reveal */
-const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
+const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.1});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 
-/* network canvas (same as portfolio) */
+/* lightbox */
+(function(){
+  const lb=document.getElementById('lightbox'), img=document.getElementById('lbImg'), cap=document.getElementById('lbCap'), close=document.getElementById('lbClose');
+  function open(src,alt){ img.src=src; img.alt=alt; cap.textContent=alt; lb.classList.add('open'); lb.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function hide(){ lb.classList.remove('open'); lb.setAttribute('aria-hidden','true'); document.body.style.overflow=''; img.src=''; }
+  document.querySelectorAll('#gallery .shot').forEach(fig=>{
+    const i=fig.querySelector('img');
+    fig.addEventListener('click',()=>open(i.getAttribute('src'), i.getAttribute('alt')));
+  });
+  lb.addEventListener('click',e=>{ if(e.target===lb || e.target===close || e.target===img) { if(e.target!==img) hide(); } });
+  lb.addEventListener('click',e=>{ if(e.target!==img) hide(); });
+  close.addEventListener('click',hide);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') hide(); });
+})();
+
+/* network canvas */
 (function(){
   const c = document.getElementById('net'); if(!c) return;
   const ctx = c.getContext('2d'); let w,h,dpr,nodes=[],pkts=[],raf;
@@ -281,24 +308,13 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
   function color(){ return getComputedStyle(document.body).getPropertyValue('--net').trim() || 'rgba(94,234,212,1)'; }
   function rgba(a){ const base=color(); return base.replace(/[\d.]+\)$/,a+')'); }
   function resize(){ dpr=Math.min(window.devicePixelRatio||1,2); w=c.clientWidth=innerWidth; h=c.clientHeight=innerHeight; c.width=w*dpr; c.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
-  function init(){
-    nodes=[]; for(let i=0;i<COUNT;i++) nodes.push({x:Math.random()*w,y:Math.random()*h*.8,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22});
-    pkts=[]; for(let i=0;i<7;i++) pkts.push({a:(Math.random()*COUNT)|0,b:(Math.random()*COUNT)|0,t:Math.random()});
-  }
+  function init(){ nodes=[]; for(let i=0;i<COUNT;i++) nodes.push({x:Math.random()*w,y:Math.random()*h*.8,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22}); pkts=[]; for(let i=0;i<7;i++) pkts.push({a:(Math.random()*COUNT)|0,b:(Math.random()*COUNT)|0,t:Math.random()}); }
   function frame(){
     ctx.clearRect(0,0,w,h);
     for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h*.85)n.vy*=-1; }
-    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
-      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy);
-      if(d<LINK){ ctx.strokeStyle=rgba(0.10*(1-d/LINK)); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); }
-    }
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){ const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy); if(d<LINK){ ctx.strokeStyle=rgba(0.10*(1-d/LINK)); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); } }
     for(const n of nodes){ ctx.fillStyle=rgba(0.5); ctx.beginPath(); ctx.arc(n.x,n.y,1.7,0,7); ctx.fill(); }
-    for(const p of pkts){ p.t+=0.006; if(p.t>=1){ p.t=0; p.a=(Math.random()*nodes.length)|0; p.b=(Math.random()*nodes.length)|0; }
-      const A=nodes[p.a], B=nodes[p.b]; if(!A||!B) continue;
-      const x=A.x+(B.x-A.x)*p.t, y=A.y+(B.y-A.y)*p.t;
-      ctx.fillStyle=rgba(0.9); ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill();
-      ctx.fillStyle=rgba(0.18); ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill();
-    }
+    for(const p of pkts){ p.t+=0.006; if(p.t>=1){ p.t=0; p.a=(Math.random()*nodes.length)|0; p.b=(Math.random()*nodes.length)|0; } const A=nodes[p.a], B=nodes[p.b]; if(!A||!B) continue; const x=A.x+(B.x-A.x)*p.t, y=A.y+(B.y-A.y)*p.t; ctx.fillStyle=rgba(0.9); ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill(); ctx.fillStyle=rgba(0.18); ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill(); }
     raf=requestAnimationFrame(frame);
   }
   function start(){ resize(); init(); cancelAnimationFrame(raf); frame(); if(reduce) cancelAnimationFrame(raf); }
