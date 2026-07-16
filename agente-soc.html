@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Agente SOC de triaje de logs con IA local · Joaquín Luis García</title>
-<meta name="description" content="Agente de IA local y offline para triaje de logs de seguridad: detección determinista en Python, mapeo a MITRE ATT&CK e informe redactado por un LLM local. Proyecto en desarrollo." />
+<meta name="description" content="Agente de IA local y offline para triaje de logs de seguridad (SSH y firewall): detección determinista en Python, mapeo a MITRE ATT&CK e informe redactado por un LLM local, validado con un harness de evaluación." />
 <meta name="theme-color" content="#0C141F" />
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
@@ -61,10 +61,10 @@
   .phero{padding:64px 0 12px}
   .eyebrow{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--accent);letter-spacing:.05em;margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.6}
-  .badge-wip{display:inline-flex;align-items:center;gap:7px;font-family:"IBM Plex Mono";font-size:11px;color:#2a1c05;
-    background:var(--warm);padding:4px 10px;border-radius:20px;letter-spacing:.04em}
+  .badge-done{display:inline-flex;align-items:center;gap:7px;font-family:"IBM Plex Mono";font-size:11px;color:var(--accent-ink);
+    background:var(--accent);padding:4px 10px;border-radius:20px;letter-spacing:.04em}
   h1{font-family:"Space Grotesk";font-weight:700;font-size:clamp(2.1rem,5vw,3.4rem);line-height:1.04;letter-spacing:-.02em}
-  .subtitle{font-family:"Space Grotesk";font-weight:500;font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--muted);margin-top:16px;max-width:62ch}
+  .subtitle{font-family:"Space Grotesk";font-weight:500;font-size:clamp(1.05rem,2.2vw,1.35rem);color:var(--muted);margin-top:16px;max-width:64ch}
   .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
   .chip{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);border:1px solid var(--border-soft);
     background:color-mix(in srgb,var(--panel) 60%,transparent);padding:7px 12px;border-radius:8px}
@@ -73,6 +73,8 @@
   .btn{font-size:14px;font-weight:500;padding:11px 20px;border-radius:9px;border:1px solid var(--border);
     transition:transform .18s,border-color .2s,background .2s;display:inline-flex;align-items:center;gap:9px;background:transparent;color:var(--text);cursor:pointer}
   .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent-strong)}
   .btn-ghost:hover{border-color:var(--accent)}
 
   section{padding:44px 0}
@@ -84,7 +86,6 @@
   .lede+.lede{margin-top:15px}
   .lede strong{opacity:1;font-weight:600}
 
-  /* split: código vs IA */
   .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .col{border:1px solid var(--border-soft);border-radius:12px;padding:24px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
   .col.code{border-left:3px solid var(--accent)}
@@ -93,16 +94,38 @@
   .col.code .tagk{color:var(--accent)} .col.ai .tagk{color:var(--warm)}
   .col h4{font-family:"Space Grotesk";font-weight:600;font-size:1.15rem;margin-bottom:10px}
   .col p{font-size:14.5px;color:var(--text);opacity:.85}
-  .motivo{margin-top:16px;font-size:14.5px;color:var(--muted);max-width:80ch}
+  .motivo{margin-top:16px;font-size:14.5px;color:var(--muted);max-width:82ch}
   .motivo b{color:var(--text)}
 
-  /* flujo */
+  .callout{border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));border-left:3px solid var(--accent);
+    background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:12px;padding:20px 24px;max-width:82ch;margin-top:18px}
+  .callout .k{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:8px}
+  .callout b{color:var(--text)}
+
   .flow{display:flex;flex-wrap:wrap;gap:10px}
-  .step{flex:1;min-width:150px;border:1px solid var(--border-soft);border-radius:10px;padding:16px 14px;
-    background:color-mix(in srgb,var(--panel) 55%,transparent);position:relative}
+  .step{flex:1;min-width:150px;border:1px solid var(--border-soft);border-radius:10px;padding:16px 14px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
   .step .sn{font-family:"IBM Plex Mono";font-size:11px;color:var(--accent);display:block;margin-bottom:6px}
   .step .st{font-family:"Space Grotesk";font-weight:600;font-size:.98rem}
   .step .sd{font-size:12.5px;color:var(--muted);margin-top:5px}
+
+  .detect{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .dcol{border:1px solid var(--border-soft);border-radius:12px;padding:22px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .dcol h4{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent);letter-spacing:.06em;margin-bottom:14px;text-transform:uppercase}
+  .dcol ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+  .dcol li{font-size:14px;color:var(--text);opacity:.88;padding-left:18px;position:relative}
+  .dcol li::before{content:"▸";position:absolute;left:0;color:var(--accent);opacity:.7}
+  .mt{font-family:"IBM Plex Mono";font-size:11px;color:var(--warm);margin-left:4px}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--border-soft);border-radius:12px;background:color-mix(in srgb,var(--panel) 45%,transparent)}
+  .rtable{width:100%;border-collapse:collapse;font-size:13.5px;min-width:540px}
+  .rtable th,.rtable td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--border-soft)}
+  .rtable thead th{font-family:"IBM Plex Mono";font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+  .rtable td.metric{color:var(--text)}
+  .rtable td.v{font-family:"IBM Plex Mono";color:var(--muted);text-align:center}
+  .rtable tr:last-child td{border-bottom:none}
+  .rtable tr.hi td{color:var(--text);font-weight:600}
+  .rtable tr.hi td.v{color:var(--accent)}
+  .tnote{font-size:13.5px;color:var(--muted);margin-top:14px;max-width:80ch}
 
   .feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
   .feat{border:1px solid var(--border-soft);border-radius:12px;padding:20px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
@@ -120,10 +143,9 @@
   .rm .n{font-family:"IBM Plex Mono";font-size:12px;color:var(--warm);flex:none;margin-top:2px}
   .rm p{font-size:14.5px;color:var(--text);opacity:.85}
 
-  .empty{border:1px dashed var(--border);border-radius:14px;padding:44px 24px;text-align:center;color:var(--muted);
-    background:color-mix(in srgb,var(--panel) 40%,transparent)}
-  .empty .big{font-size:30px;margin-bottom:12px}
-  .empty p{max-width:60ch;margin:0 auto}
+  .foot-cta{border:1px solid var(--border);border-radius:16px;padding:34px;text-align:center;background:linear-gradient(180deg,var(--panel),var(--panel-2));margin-top:10px}
+  .foot-cta h3{font-family:"Space Grotesk";font-weight:600;font-size:1.35rem;margin-bottom:8px}
+  .foot-cta p{color:var(--muted);margin-bottom:22px}
 
   footer{border-top:1px solid var(--border-soft);padding:26px 0;margin-top:40px}
   .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted-dim)}
@@ -131,7 +153,7 @@
   .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
   .reveal.in{opacity:1;transform:none}
   @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
-  @media (max-width:760px){section{padding:38px 0}.phero{padding:44px 0 8px}.split{grid-template-columns:1fr}}
+  @media (max-width:760px){section{padding:38px 0}.phero{padding:44px 0 8px}.split,.detect{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -151,15 +173,17 @@
 
   <!-- HERO -->
   <section class="phero" id="top">
-    <div class="eyebrow mono"><span class="badge-wip">🛠️ En desarrollo</span> ciberseguridad defensiva · blue team</div>
+    <div class="eyebrow mono"><span class="badge-done">✓ Completado · en GitHub</span> ciberseguridad defensiva · blue team</div>
     <h1>Agente SOC de triaje de logs</h1>
-    <p class="subtitle">Agente de IA <strong style="color:var(--text)">local y offline</strong> que hace el primer triaje de un analista SOC: detecta patrones de ataque en logs, los mapea a <strong style="color:var(--text)">MITRE ATT&amp;CK</strong> y redacta un informe. Proyecto de aprendizaje orientado a un perfil SOC/MSP.</p>
+    <p class="subtitle">Agente de IA <strong style="color:var(--text)">local y offline</strong> que hace el primer triaje de un analista SOC: detecta patrones de ataque en logs <strong style="color:var(--text)">SSH y de firewall</strong>, los mapea a <strong style="color:var(--text)">MITRE ATT&amp;CK</strong> y redacta un informe. Con harness de evaluación para medir su fiabilidad.</p>
     <div class="meta-row">
-      <span class="chip">Estado: <b>en desarrollo</b></span>
+      <span class="chip">Estado: <b>completado</b></span>
       <span class="chip">Ejecución: <b>100% local / offline</b></span>
       <span class="chip">Enfoque: <b>defensivo (blue team)</b></span>
+      <span class="chip">Licencia: <b>MIT</b></span>
     </div>
     <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/Joaquin7gg/soc-triage-agent" target="_blank" rel="noopener">Ver en GitHub ↗</a>
       <a class="btn btn-ghost" href="index.html">← Volver al portfolio</a>
     </div>
   </section>
@@ -167,8 +191,8 @@
   <!-- 01 QUÉ ES -->
   <section class="reveal">
     <div class="sec-head"><span class="sec-num">01</span><h2>Qué es</h2><span class="sec-line"></span></div>
-    <p class="lede">Un agente de IA que se ejecuta <strong>en local, sin conexión</strong>, y automatiza el primer paso del trabajo de un analista SOC: coge un log de seguridad (por ejemplo, accesos SSH), <strong>detecta patrones de ataque</strong> (fuerza bruta, IPs sospechosas, horarios anómalos), los <strong>mapea a técnicas de MITRE ATT&amp;CK</strong> y redacta un informe de triaje priorizado.</p>
-    <p class="lede">El argumento del proyecto es la <strong>privacidad (RGPD)</strong>: los logs nunca salen de la máquina. Todo el análisis y la generación del informe ocurren en el propio equipo, con un modelo pequeño corriendo en local.</p>
+    <p class="lede">Un agente de IA que se ejecuta <strong>en local, sin conexión</strong>, y automatiza el primer paso del trabajo de un analista SOC: coge un log de seguridad (accesos <strong>SSH</strong> o eventos de <strong>firewall de Windows</strong>, con detección automática de formato), <strong>detecta patrones de ataque</strong>, los <strong>mapea a técnicas de MITRE ATT&amp;CK</strong> y redacta un informe de triaje priorizado.</p>
+    <p class="lede">El argumento del proyecto es la <strong>privacidad (RGPD)</strong>: los logs nunca salen de la máquina. Todo el análisis y la generación del informe ocurren en el propio equipo, con un modelo pequeño (Llama 3.2 3B) corriendo en local sobre un portátil con 4 GB de VRAM.</p>
   </section>
 
   <!-- 02 PRINCIPIO -->
@@ -178,33 +202,82 @@
       <div class="col code">
         <span class="tagk">El código detecta</span>
         <h4>Detección determinista (Python)</h4>
-        <p>Contar fallos, cruzar IPs, revisar horarios: todo eso lo hace código Python determinista. Nunca el modelo. Resultados fiables y reproducibles.</p>
+        <p>Contar fallos, cruzar IPs, revisar horarios, identificar escaneos de puertos: todo eso lo hace código Python determinista. Nunca el modelo. Resultados fiables y reproducibles.</p>
       </div>
       <div class="col ai">
         <span class="tagk">La IA narra</span>
         <h4>Redacción con LLM local</h4>
-        <p>El modelo local solo <strong>redacta y prioriza</strong> el informe a partir de los hallazgos ya detectados. No detecta nada por su cuenta.</p>
+        <p>El modelo local solo <strong>redacta y prioriza</strong> el informe a partir de los hallazgos ya detectados. No detecta nada por su cuenta, así no puede inventarse hallazgos.</p>
       </div>
     </div>
-    <p class="motivo"><b>Por qué:</b> el modelo objetivo es pequeño (~4B, límite de 4 GB de VRAM) y no razona bien con conteos ni timestamps. Este reparto también imita cómo funcionan los productos SOC reales: <b>la IA asiste al detector, no lo sustituye.</b></p>
+    <p class="motivo"><b>Por qué:</b> el modelo es pequeño (~3B, límite de 4 GB de VRAM) y no razona bien con conteos ni timestamps. Este reparto también imita cómo funcionan los productos SOC reales: <b>la IA asiste al detector, no lo sustituye.</b></p>
+    <div class="callout">
+      <span class="k">Evidencia de la decisión</span>
+      Se probó también un <b>modo agente autónomo</b> (el modelo decide los pasos): logró <b>0/10</b> informes completos, frente a <b>18/20</b> del flujo orquestado. Con modelos pequeños, un flujo fijo gana a un agente "suelto".
+    </div>
   </section>
 
   <!-- 03 CÓMO FUNCIONA -->
   <section class="reveal">
     <div class="sec-head"><span class="sec-num">03</span><h2>Cómo funciona</h2><span class="sec-line"></span></div>
     <div class="flow">
-      <div class="step"><span class="sn">01</span><span class="st">Parseo del log</span><div class="sd">Lectura y estructura del log (solo lectura).</div></div>
+      <div class="step"><span class="sn">01</span><span class="st">Parseo del log</span><div class="sd">Lectura y detección automática de formato (SSH o firewall).</div></div>
       <div class="step"><span class="sn">02</span><span class="st">Detección (Python)</span><div class="sd">Detectores deterministas de patrones de ataque.</div></div>
-      <div class="step"><span class="sn">03</span><span class="st">MITRE ATT&amp;CK</span><div class="sd">Mapeo de hallazgos a técnicas conocidas.</div></div>
-      <div class="step"><span class="sn">04</span><span class="st">Informe (LLM)</span><div class="sd">El modelo local redacta y prioriza.</div></div>
+      <div class="step"><span class="sn">03</span><span class="st">MITRE ATT&amp;CK</span><div class="sd">Mapeo de hallazgos a técnicas concretas.</div></div>
+      <div class="step"><span class="sn">04</span><span class="st">Informe (LLM)</span><div class="sd">El modelo local redacta y prioriza (<code>informe.md</code>).</div></div>
       <div class="step"><span class="sn">05</span><span class="st">Auditoría</span><div class="sd">Cada paso se registra en <code>audit.jsonl</code>.</div></div>
     </div>
-    <p class="motivo" style="margin-top:18px">El modelo corre en LM Studio (API compatible con OpenAI, en <code>localhost:1234</code>). Si LM Studio está apagado, el agente <b>degrada a un informe de plantilla</b> en vez de romperse.</p>
+    <p class="motivo" style="margin-top:18px">El modelo corre en LM Studio (API compatible con OpenAI, en <code>localhost:1234</code>). Si LM Studio está apagado, el agente <b>degrada a un informe de plantilla</b> en vez de romperse. También hay un modo <code>--sin-ia</code> con solo la detección determinista.</p>
   </section>
 
-  <!-- 04 PRINCIPIOS -->
+  <!-- 04 QUÉ DETECTA -->
   <section class="reveal">
-    <div class="sec-head"><span class="sec-num">04</span><h2>Principios de diseño</h2><span class="sec-line"></span></div>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Qué detecta</h2><span class="sec-line"></span></div>
+    <div class="detect">
+      <div class="dcol">
+        <h4>Logs SSH (auth.log)</h4>
+        <ul>
+          <li>Fuerza bruta <span class="mt">T1110</span></li>
+          <li>Login exitoso tras fallos <span class="mt">T1110 · T1078</span></li>
+          <li>Accesos a horas inusuales <span class="mt">T1078</span></li>
+        </ul>
+      </div>
+      <div class="dcol">
+        <h4>Firewall de Windows (pfirewall.log)</h4>
+        <ul>
+          <li>Escaneo de puertos <span class="mt">T1046</span></li>
+          <li>Barridos de red <span class="mt">T1018</span></li>
+          <li>Acceso tras intentos bloqueados <span class="mt">T1110 · T1021</span></li>
+          <li>Patrones de reverse shell <span class="mt">T1571 · T1219</span></li>
+          <li>Puertos no estándar / sensibles <span class="mt">T1571 · T1021</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 RESULTADOS -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Resultados (evaluación)</h2><span class="sec-line"></span></div>
+    <p class="lede" style="margin-bottom:22px">La pieza que más diferencia el proyecto: un <strong>harness de evaluación</strong> que ejecuta el informe muchas veces y mide la fiabilidad del modelo. Medición sobre <strong>60 generaciones</strong> (20 por tipo de log).</p>
+    <div class="tablewrap">
+      <table class="rtable">
+        <thead><tr><th>Métrica</th><th style="text-align:center">SSH</th><th style="text-align:center">SSH denso</th><th style="text-align:center">Firewall</th></tr></thead>
+        <tbody>
+          <tr><td class="metric">Sin IPs inventadas</td><td class="v">20/20</td><td class="v">20/20</td><td class="v">20/20</td></tr>
+          <tr><td class="metric">Sin códigos MITRE inventados</td><td class="v">20/20</td><td class="v">20/20</td><td class="v">20/20</td></tr>
+          <tr><td class="metric">Cobertura completa de hallazgos</td><td class="v">20/20</td><td class="v">20/20</td><td class="v">20/20</td></tr>
+          <tr><td class="metric">Orden de severidad correcto</td><td class="v">20/20</td><td class="v">20/20</td><td class="v">20/20</td></tr>
+          <tr><td class="metric">Estructura de informe válida</td><td class="v">20/20</td><td class="v">20/20</td><td class="v">20/20</td></tr>
+          <tr class="hi"><td class="metric">Informes impecables</td><td class="v">18/20</td><td class="v">18/20</td><td class="v">15/20</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tnote"><b>Defecto conocido:</b> ~2 de cada 20 informes omiten las etiquetas de severidad (correlaciona con informes más cortos). Está documentado y en el roadmap.</p>
+  </section>
+
+  <!-- 06 PRINCIPIOS -->
+  <section class="reveal">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Principios de diseño</h2><span class="sec-line"></span></div>
     <div class="feats">
       <div class="feat"><h4>Solo datos sintéticos</h4><p>Nunca logs, IPs ni datos personales reales. Las IPs de prueba son de rangos de documentación (RFC 5737).</p></div>
       <div class="feat"><h4>Solo defensivo</h4><p>Blue team: triaje, detección e informe. Nada ofensivo.</p></div>
@@ -214,41 +287,35 @@
     </div>
   </section>
 
-  <!-- 05 STACK -->
+  <!-- 07 STACK -->
   <section class="reveal">
-    <div class="sec-head"><span class="sec-num">05</span><h2>Stack</h2><span class="sec-line"></span></div>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Stack</h2><span class="sec-line"></span></div>
     <div class="stack">
-      <div class="group"><h4>Detección</h4><ul><li>Python (determinista)</li><li>Parseo de logs</li><li>Detectores de patrones</li></ul></div>
-      <div class="group"><h4>Inteligencia</h4><ul><li>LLM local (~4B, Q4)</li><li>LM Studio (API OpenAI)</li><li>Qwen3 / Gemma / Llama 3.2</li></ul></div>
-      <div class="group"><h4>Marco</h4><ul><li>MITRE ATT&amp;CK</li><li>Informe priorizado</li><li>Degradación sin IA</li></ul></div>
-      <div class="group"><h4>Trazabilidad</h4><ul><li>Auditoría JSON Lines</li><li>Datos sintéticos (RFC 5737)</li><li>Ejecución offline</li></ul></div>
+      <div class="group"><h4>Detección</h4><ul><li>Python 100%</li><li>Auto-detección de formato</li><li>Detectores por técnica</li></ul></div>
+      <div class="group"><h4>Inteligencia</h4><ul><li>Llama 3.2 3B Instruct (Q4_K_M)</li><li>LM Studio (API OpenAI)</li><li>Degradación a plantilla</li></ul></div>
+      <div class="group"><h4>Marco</h4><ul><li>MITRE ATT&amp;CK</li><li>Informe priorizado</li><li>Modo <code>--sin-ia</code></li></ul></div>
+      <div class="group"><h4>Evaluación y traza</h4><ul><li>Harness de fiabilidad</li><li>Auditoría JSON Lines</li><li>Datos sintéticos (RFC 5737)</li></ul></div>
     </div>
   </section>
 
-  <!-- 06 CAPTURAS -->
+  <!-- 08 ROADMAP -->
   <section class="reveal">
-    <div class="sec-head"><span class="sec-num">06</span><h2>Capturas</h2><span class="sec-line"></span></div>
-    <div class="empty">
-      <div class="big">🚧</div>
-      <p>Proyecto en construcción. En cuanto el agente esté funcionando, aquí irán las capturas del informe generado y del registro de auditoría.</p>
-    </div>
-  </section>
-
-  <!-- 07 ROADMAP -->
-  <section class="reveal">
-    <div class="sec-head"><span class="sec-num">07</span><h2>Roadmap</h2><span class="sec-line"></span></div>
+    <div class="sec-head"><span class="sec-num">08</span><h2>Roadmap</h2><span class="sec-line"></span></div>
     <div class="roadmap">
-      <div class="rm"><span class="n">01</span><p><strong>Harness de evaluación:</strong> ejecutar el informe N veces y medir los aciertos del modelo (que mencione las IPs detectadas, estructura válida, sin inventar). Es la pieza que más diferencia el proyecto.</p></div>
-      <div class="rm"><span class="n">02</span><p><strong>Más fuentes:</strong> soporte para logs de firewall y eventos de Windows.</p></div>
-      <div class="rm"><span class="n">03</span><p><strong>Modo autónomo:</strong> un "bucle autónomo" opcional para comparar con el flujo orquestado.</p></div>
+      <div class="rm"><span class="n">01</span><p><strong>Eventos de Windows:</strong> soporte para el registro de seguridad (<code>Security.evtx</code>).</p></div>
+      <div class="rm"><span class="n">02</span><p><strong>Etiquetas de severidad:</strong> corregir el defecto conocido (omisión ocasional en informes cortos).</p></div>
     </div>
   </section>
 
   <!-- CIERRE -->
   <section class="reveal">
-    <div class="empty" style="border-style:solid">
-      <p style="margin-bottom:16px">Este proyecto está en desarrollo. Vuelve pronto para ver el agente funcionando.</p>
-      <a class="btn btn-ghost" href="index.html#projects" style="display:inline-flex">← Otros proyectos</a>
+    <div class="foot-cta">
+      <h3>Código, documentación y evaluación</h3>
+      <p>Todo el proyecto está publicado en GitHub, con guía didáctica y decisiones de diseño documentadas.</p>
+      <div class="cta" style="justify-content:center">
+        <a class="btn btn-primary" href="https://github.com/Joaquin7gg/soc-triage-agent" target="_blank" rel="noopener">Ver en GitHub ↗</a>
+        <a class="btn btn-ghost" href="index.html#projects">← Otros proyectos</a>
+      </div>
     </div>
   </section>
 
