@@ -164,6 +164,7 @@
     <p class="subtitle">Un panel <strong style="color:var(--text)">físico</strong> que muestra el estado del PC en tiempo real y, a la vez, escucha el aire como <strong style="color:var(--text)">sensor defensivo de WiFi</strong>, volcando sus hallazgos a un pequeño SIEM en el ordenador.</p>
     <div class="meta-row">
       <span class="chip">MCU: <b>ESP32-S3 · doble núcleo 240 MHz</b></span>
+      <span class="chip">Memoria: <b>8 MB PSRAM · 16 MB Flash</b></span>
       <span class="chip">Pantalla: <b>AMOLED 368×448 · CO5300</b></span>
       <span class="chip">Radio: <b>WiFi 2.4 GHz · modo monitor</b></span>
       <span class="chip">Firmware: <b>C++ de cero</b></span>
@@ -194,7 +195,7 @@
       </div>
       <div class="frame">
         <span class="dir">placa → PC</span>
-        <div class="code2"><span class="k">E;</span>deauth;ventana=15;canal=6;bssid=A0:2D:13:6E:86:95</div>
+        <div class="code2"><span class="k">E;</span>deauth;ventana=15;canal=6;bssid=AA:BB:CC:DD:EE:FF</div>
       </div>
     </div>
   </section>
@@ -270,8 +271,8 @@
         <ul>
           <li>C++ · arduino-esp32 3.3.11</li>
           <li>PlatformIO + pioarduino</li>
-          <li>UI con LVGL 9.5</li>
-          <li>Driver CO5300 por QSPI</li>
+          <li>LVGL 9.5 · GFX Library 1.6.7</li>
+          <li>Driver CO5300 (QSPI)</li>
           <li>Concurrencia por núcleos</li>
         </ul>
       </div>
