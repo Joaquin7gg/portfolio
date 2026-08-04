@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guía de construcción — Monitorizador ESP32-S3 · Joaquín Luis García</title>
+<meta name="description" content="Guía paso a paso de construcción del monitorizador ESP32-S3: por fases, con las decisiones clave y los tropiezos reales (hardware, firmware, puente Python y SIEM)." />
+<meta name="theme-color" content="#0C141F" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root, [data-theme="dark"]{
+    --bg:#0C141F; --bg-grad:#0F1A26; --panel:#13202E; --panel-2:#172838;
+    --border:#233344; --border-soft:#1B2937;
+    --text:#E4ECF5; --muted:#8497AD; --muted-dim:#5C6E83;
+    --accent:#5EEAD4; --accent-strong:#2DD4BF; --accent-ink:#06231f; --warm:#F4B860;
+    --net:rgba(94,234,212,1); --code-bg:#0A1019;
+  }
+  [data-theme="light"]{
+    --bg:#EDF2F7; --bg-grad:#F6F9FC; --panel:#FFFFFF; --panel-2:#F4F8FB;
+    --border:#D3DEE9; --border-soft:#E1E9F1;
+    --text:#16242F; --muted:#516274; --muted-dim:#8497A8;
+    --accent:#0E9E8E; --accent-strong:#0B8576; --accent-ink:#ffffff; --warm:#C77D1A;
+    --net:rgba(14,158,142,1); --code-bg:#0d1620;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:linear-gradient(180deg,var(--bg-grad),var(--bg) 460px);
+    color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .4s,color .4s}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:880px;margin:0 auto;padding:0 28px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+  code{font-family:"IBM Plex Mono",monospace;font-size:.88em;background:color-mix(in srgb,var(--accent) 10%,transparent);
+    border:1px solid var(--border-soft);border-radius:5px;padding:1px 6px;color:var(--text)}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:15px 18px;overflow-x:auto;
+    margin:14px 0;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;color:#c3cad6}
+  pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+  pre .cm{color:#6b7686}
+  pre .st{color:var(--accent)}
+
+  #net{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.45;
+    mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%);
+    -webkit-mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%)}
+  [data-theme="light"] #net{opacity:.34}
+
+  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 72%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border-soft)}
+  .bar{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .handle{font-family:"Space Grotesk";font-weight:700;letter-spacing:.04em;font-size:15px;display:flex;align-items:center;gap:6px}
+  .handle b{color:var(--accent)}
+  .handle small{font-family:"IBM Plex Mono";font-weight:400;font-size:12px;color:var(--muted)}
+  .back{font-size:13.5px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;transition:color .2s,gap .18s}
+  .back:hover{color:var(--text);gap:10px}
+  .tools{display:flex;align-items:center;gap:14px}
+  .theme-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);cursor:pointer;display:grid;place-items:center;transition:transform .2s,border-color .2s}
+  .theme-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .theme-btn svg{width:17px;height:17px}
+
+  .phero{padding:56px 0 8px}
+  .eyebrow{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--accent);letter-spacing:.05em;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.6}
+  h1{font-family:"Space Grotesk";font-weight:700;font-size:clamp(2rem,4.6vw,3rem);line-height:1.06;letter-spacing:-.02em}
+  .subtitle{font-size:clamp(15px,1.8vw,17px);color:var(--muted);margin-top:16px;max-width:66ch}
+  .subtitle strong{color:var(--text);font-weight:600}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+  .btn{font-size:14px;font-weight:500;padding:11px 20px;border-radius:9px;border:1px solid var(--border);
+    transition:transform .18s,border-color .2s,background .2s;display:inline-flex;align-items:center;gap:9px;background:transparent;color:var(--text);cursor:pointer}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent-strong)}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  /* phase index */
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0 6px}
+  .toc a{font-family:"IBM Plex Mono";font-size:12px;color:var(--muted);border:1px solid var(--border-soft);
+    background:color-mix(in srgb,var(--panel) 55%,transparent);padding:6px 11px;border-radius:8px;transition:color .2s,border-color .2s}
+  .toc a:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--border))}
+
+  section{padding:34px 0;border-top:1px solid var(--border-soft)}
+  h2{font-family:"Space Grotesk";font-weight:600;font-size:clamp(1.35rem,2.8vw,1.8rem);letter-spacing:-.01em;scroll-margin-top:72px}
+  .fase{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent);letter-spacing:.06em;display:block;margin-bottom:6px}
+  h3{font-family:"Space Grotesk";font-weight:600;font-size:1.05rem;margin:22px 0 8px}
+  p{margin:0 0 14px;max-width:68ch}
+  p strong{font-weight:600}
+  ul{margin:0 0 14px;padding-left:2px;list-style:none;max-width:68ch}
+  li{position:relative;padding-left:20px;margin-bottom:9px}
+  li::before{content:"▸";position:absolute;left:0;color:var(--accent);opacity:.7}
+  .obj{color:var(--muted);font-style:italic}
+
+  /* callouts */
+  .decision, .tropiezo{border-radius:12px;padding:18px 22px;margin:16px 0;max-width:74ch}
+  .decision{border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));border-left:3px solid var(--accent);
+    background:color-mix(in srgb,var(--accent) 6%,transparent)}
+  .tropiezo{border:1px solid color-mix(in srgb,var(--warm) 30%,var(--border));border-left:3px solid var(--warm);
+    background:color-mix(in srgb,var(--warm) 6%,transparent)}
+  .decision .k,.tropiezo .k{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:9px}
+  .decision .k{color:var(--accent)} .tropiezo .k{color:var(--warm)}
+  .decision p:last-child,.tropiezo p:last-child{margin-bottom:0}
+  .decision b,.tropiezo b{color:var(--text)}
+
+  footer{border-top:1px solid var(--border-soft);padding:26px 0;margin-top:20px}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted-dim)}
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  @media (max-width:760px){section{padding:28px 0}.phero{padding:40px 0 6px}}
+</style>
+</head>
+<body>
+<canvas id="net" aria-hidden="true"></canvas>
+
+<header>
+  <div class="wrap bar">
+    <a class="back" href="monitorizador.html">← Volver al proyecto</a>
+    <div class="tools">
+      <div class="handle">JLG<b>·</b><small>sys/sec</small></div>
+      <button class="theme-btn" id="theme" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema"></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="phero" id="top" style="border-top:none">
+    <div class="eyebrow mono">tutorial · sistemas embebidos · paso a paso</div>
+    <h1>Guía de construcción</h1>
+    <p class="subtitle">Cómo se construye el <strong>Monitorizador ESP32-S3</strong> de principio a fin, por fases. No es solo "qué comandos ejecutar": cada fase incluye la <strong>decisión clave</strong> y el <strong>tropiezo real</strong> que me encontré, que es justo lo que te ahorrará días si intentas replicarlo.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/Joaquin7gg/esp32-pc-monitor" target="_blank" rel="noopener">Ver repositorio ↗</a>
+      <a class="btn btn-ghost" href="monitorizador.html">← Volver al proyecto</a>
+    </div>
+    <div class="decision" style="margin-top:26px">
+      <span class="k">Filosofía · ir por fases</span>
+      <p style="margin:0">El error clásico en un proyecto con hardware, firmware y PC a la vez es montarlo todo de golpe y no saber dónde falla. <b>Cada fase se valida antes de pasar a la siguiente.</b></p>
+    </div>
+    <nav class="toc" aria-label="Fases">
+      <a href="#construir">Qué construyes</a>
+      <a href="#fase0">0 · Entorno</a>
+      <a href="#fase1">1 · Placa viva</a>
+      <a href="#fase2">2 · LVGL</a>
+      <a href="#fase3">3 · Puente</a>
+      <a href="#fase4">4 · Serie</a>
+      <a href="#fase5">5 · WiFi</a>
+      <a href="#fase6">6 · SIEM</a>
+    </nav>
+  </section>
+
+  <section class="reveal">
+    <h2 id="construir">Qué vas a construir</h2>
+    <p>Un panel físico sobre una placa <strong>Waveshare ESP32-S3-Touch-AMOLED-1.8</strong> que:</p>
+    <ul>
+      <li>muestra las métricas del PC (CPU, GPU, RAM, temperaturas, FPS) en tiempo real,</li>
+      <li>escucha el WiFi como sensor defensivo (deauth + gemelo malvado),</li>
+      <li>y vuelca eventos de seguridad a un <strong>SIEM casero</strong> en el ordenador.</li>
+    </ul>
+    <p><strong>Necesitas:</strong> la placa, un cable USB-C, un PC con Windows, y algo de C++ y Python.</p>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase0"><span class="fase">Fase 0</span>Entorno</h2>
+    <p class="obj">Objetivo: poder compilar y flashear.</p>
+    <ul>
+      <li><strong>PlatformIO</strong> (mejor que Arduino IDE para un proyecto con varias piezas).</li>
+      <li>La plataforma <strong>NO es la oficial</strong> <code>espressif32</code> (congelada en arduino-esp32 2.0.17), sino el fork comunitario <strong>pioarduino</strong>, que trae arduino-esp32 3.x. En <code>platformio.ini</code>:</li>
+    </ul>
+    <pre><code>platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.311/platform-espressif32.zip</code></pre>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo (Windows) · rutas largas</span>
+      <p>Los paquetes de Espressif traen rutas de más de 260 caracteres y la instalación falla con un <code>FileNotFoundError</code> engañoso. Solución, una vez, en PowerShell <b>como administrador</b>:</p>
+      <pre><code>Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1 -Type DWord</code></pre>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase1"><span class="fase">Fase 1</span>Placa viva</h2>
+    <p class="obj">Objetivo: encender la pantalla y pintar algo. Si esto funciona, el hardware, el driver y el build están bien.</p>
+    <div class="decision">
+      <span class="k">Decisión clave · identificar el driver de verdad</span>
+      <p>No fiarse de la etiqueta. Esta placa tiene dos revisiones con controladores distintos, y <b>el vendedor puede etiquetarla mal</b>. En vez de adivinar, se identifica por el <b>bus I2C</b>:</p>
+      <pre><code><span class="cm"># sube un escáner I2C</span>
+pio run -e diag -t upload</code></pre>
+      <p style="margin-top:12px">Táctil en <code>0x15</code> (CST816/CST820) → revisión <b>V2</b> → pantalla <b>CO5300</b>.<br>Táctil en <code>0x38</code> (FT3168) → revisión <b>Original/V1</b> → pantalla <b>SH8601</b>.</p>
+    </div>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo · el fallo silencioso</span>
+      <p>La nuestra venía como "Original" pero el escaneo la delató como <b>V2 (CO5300)</b>. Con el driver equivocado la pantalla se queda <b>negra pero <code>gfx-&gt;begin()</code> devuelve <code>true</code></b>: el bus QSPI es de solo escritura, así que mandar la secuencia de otro chip no da error, simplemente no enciende. Un fallo que desconcierta si no sabes esto.</p>
+    </div>
+    <p>Detalles del driver correcto (con la GFX Library for Arduino <code>@1.6.7</code>):</p>
+    <pre><code>Arduino_OLED *gfx = new Arduino_CO5300(bus, GFX_NOT_DEFINED, 0,
+                                       LCD_WIDTH, LCD_HEIGHT, 16, 0, 0, 0);</code></pre>
+    <ul>
+      <li>El puntero es <code>Arduino_OLED*</code> (no <code>Arduino_GFX*</code>): <code>setBrightness()</code> vive ahí.</li>
+      <li>El <code>16</code> es <code>col_offset1</code>: el CO5300 direcciona su RAM con 16 px de desplazamiento. Sin él, la imagen sale corrida.</li>
+    </ul>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase2"><span class="fase">Fase 2</span>Interfaz con LVGL</h2>
+    <p class="obj">Objetivo: pintar el dashboard (aún con valores fijos).</p>
+    <ul>
+      <li><strong>LVGL 9.5</strong> sobre la GFX Library. Ojo: la API de la 9.x cambió respecto a la 8.x, así que los ejemplos LVGL de Waveshare (que son 8.x) no valen tal cual.</li>
+      <li>El <code>lv_conf.h</code> va en <code>include/</code> del proyecto (no dentro de la librería, que se reinstala). Hay que añadir esa carpeta a la ruta de compilación:</li>
+    </ul>
+    <pre><code>build_flags = -DLV_CONF_INCLUDE_SIMPLE -Iinclude</code></pre>
+    <ul>
+      <li>Buffers de dibujo en <strong>RAM interna apta para DMA</strong> (más rápida que la PSRAM), en modo de render <strong>parcial</strong> (solo repinta lo que cambia).</li>
+    </ul>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo · la rotación</span>
+      <p>El panel es 368×448 <b>vertical nativo</b> y su controlador <b>no sabe rotar</b> (solo espeja). Para verlo apaisado, la rotación se hace <b>por software en el callback de volcado</b>: LVGL dibuja en 448×368 y nosotros giramos cada trozo 90° al escribirlo. Así el <code>col_offset</code> sigue siendo válido y no hay que recalcular nada.</p>
+    </div>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo · render parcial y el panel apagado</span>
+      <p>Con el render PARCIAL, al apagar el panel pierde su contenido y LVGL solo repinta lo que cambia. Hay que <b>invalidar la pantalla entera</b> al despertar (<code>lv_obj_invalidate</code>) o el título y las etiquetas fijas no se redibujan.</p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase3"><span class="fase">Fase 3</span>El puente (PC → sensores)</h2>
+    <p class="obj">Objetivo: leer las métricas del PC e imprimirlas por consola (sin placa aún).</p>
+    <ul>
+      <li>En Windows, <strong><code>psutil</code> no da temperaturas fiables</strong>. Se usa <strong>LibreHardwareMonitor</strong> con su servidor web (<code>http://localhost:8085/data.json</code>). Hay que ejecutarlo <strong>como administrador</strong> (lee sensores vía un driver de kernel) y activar <em>Options → Remote Web Server</em>.</li>
+      <li>Un script <strong>Python</strong> (<code>pyserial</code> + <code>requests</code>) lee ese JSON y arma una trama.</li>
+    </ul>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo · nombres de sensores ambiguos</span>
+      <p>Cada CPU/GPU nombra sus sensores distinto, así que hay que descubrirlos:</p>
+      <pre><code>python bridge.py --discover</code></pre>
+      <p style="margin-top:12px">Y <b>anclar cada métrica a su SensorId exacto</b>, no a un nombre suelto: en una Radeon, "GPU Core" existe como reloj, carga, temperatura <b>y voltaje</b>. Poner "gpu core" a secas cogía el <b>voltaje</b> (0,7) y lo mostraba como uso y temperatura de GPU: un dato plausible y falso, sin ningún error que lo delate. <b>Un dato equivocado pero verosímil es peor que un fallo ruidoso.</b></p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase4"><span class="fase">Fase 4</span>El enlace serie</h2>
+    <p class="obj">Objetivo: que los valores reales del PC aparezcan en la pantalla. Aquí ya tienes un dashboard funcional.</p>
+    <ul>
+      <li>Las métricas van por <strong>USB serie</strong>, una línea por trama, con prefijo <code>M;</code>:</li>
+    </ul>
+    <pre><code>M;cpu=6.2;cput=42;gpu=88;gput=71;ram=54;fps=144</code></pre>
+    <ul>
+      <li>El parser del firmware <strong>descarta todo lo que no empiece por <code>M;</code></strong>: así es robusto ante líneas a medias, mensajes de arranque del PC o basura en el cable.</li>
+      <li>Si dejan de llegar datos, la placa lo avisa en pantalla y apaga el panel a los 30 s (se enciende solo al volver los datos).</li>
+    </ul>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase5"><span class="fase">Fase 5</span>Detección WiFi (blue team)</h2>
+    <p class="obj">Objetivo: detectar ataques de deauth y gemelos malvados.</p>
+    <div class="decision">
+      <span class="k">Decisión clave · métricas por serie, no por WiFi</span>
+      <p>El modo monitor (escuchar el aire) y recibir datos por WiFi <b>no conviven</b> en una sola radio: en promiscuo no estás asociado a ningún AP. Por eso las métricas van por el cable y la radio queda libre para escuchar. Núcleo 0: WiFi; núcleo 1: UI.</p>
+    </div>
+    <ul>
+      <li>Modo <strong>promiscuo</strong> con <code>WIFI_MODE_NULL</code>, saltando por los canales <strong>1–13</strong>.</li>
+      <li><strong>Deauth:</strong> cuenta frames de desautenticación; alerta por <strong>ráfaga sostenida</strong> (12+ en 3 s), no por frame suelto (un deauth aislado es normal).</li>
+      <li><strong>Gemelo malvado:</strong> parsea los beacons y detecta un SSID ya visto con otra MAC.</li>
+    </ul>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo · el juicio fiable vive en el PC</span>
+      <p>La detección de gemelo en la placa es un heurístico con falsos positivos (varios vecinos con routers Xiaomi se llaman todos "MIWIFI"). La regla fiable se hace en el puente: tú declaras las MAC buenas de tu red, y solo eso confirma un ataque.</p>
+    </div>
+    <div class="tropiezo">
+      <span class="k">◆ Limitación honesta</span>
+      <p>La recepción WiFi está muy condicionada por la antena integrada del ESP32 y su entorno de radio (ruido del PC/monitor, proximidad). Lo diagnostiqué midiendo: fijando la placa en el canal del router y viendo que aun así no lo oía. La detección <b>funciona</b>, pero como sensor serio necesitaría otra placa con antena externa. <b>Saber dónde está el límite vale más que ocultarlo.</b></p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase6"><span class="fase">Fase 6</span>El SIEM casero</h2>
+    <p class="obj">Objetivo: guardar los eventos de seguridad y poder mirarlos.</p>
+    <ul>
+      <li>La placa manda eventos por el <strong>mismo cable serie</strong>, con prefijo <code>E;</code>:</li>
+    </ul>
+    <pre><code>E;deauth;ventana=15;canal=6;bssid=AA:BB:CC:DD:EE:FF
+E;ap;ssid=MiRed;bssid=...;canal=6;rssi=-42</code></pre>
+    <ul>
+      <li>El puente los guarda en <code>events.jsonl</code> (una línea JSON por evento) y un <strong>visor web local</strong> (<code>python siem_web.py</code> → <code>localhost:8099</code>) los muestra.</li>
+      <li>El log se <strong>auto-recorta</strong> al superar un tope (<code>max_eventos</code>) para no crecer sin fin, y hay un botón para vaciarlo.</li>
+    </ul>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo · fuga entre lenguajes</span>
+      <p>El HTML/JS del visor vive dentro de una cadena de Python. Un <code>\n</code> en el código Python se convierte en un <b>salto de línea real dentro de una cadena de JavaScript</b>, lo que rompe <em>todo</em> el script de la página (queda muda). Regla: nada de <code>\n</code> dentro de literales de cadena JS que estén en una cadena de Python. Y <b>prueba la página en el navegador</b>, no solo la API: el mismo endpoint funcionaba y la página estaba rota.</p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="transversales">Tropiezos transversales</h2>
+    <p class="obj">No son de una fase concreta, pero te pueden costar horas.</p>
+    <ul>
+      <li><strong>El puerto COM te lo roban.</strong> En equipos ASUS, el servicio de iluminación (Aura / <code>LightingService</code>) escanea y se queda con los puertos COM, impidiendo flashear y bloqueando al puente. No lo necesita (tu placa no es un dispositivo Aura), solo lo sondea. Solución: que el puente coja el puerto antes, o parar ese servicio al flashear.</li>
+      <li><strong>Handles huérfanos.</strong> Matar un proceso con el puerto abierto (<code>-Force</code>) deja el COM colgado a nivel de driver; ni reenchufar lo suelta, solo reiniciar o reenumerar. Cierra el puente con <code>Ctrl+C</code>, no a lo bruto.</li>
+      <li><strong>Privacidad al subir a GitHub.</strong> El log (<code>events.jsonl</code>) contiene SSIDs y MAC <strong>reales de redes de terceros</strong>, y <code>config.ini</code> tu puerto y la MAC de tu red. Ambos van al <code>.gitignore</code>. Y los <code>.pio/</code> (build) no se suben.</li>
+    </ul>
+  </section>
+
+  <section class="reveal">
+    <h2 id="estructura">Estructura del repo</h2>
+    <pre><code>/
+├── firmware/   Firmware del ESP32 (C++, PlatformIO)
+│   └── src/    main.cpp, ui/, serial_link/, wifi_monitor/, diag_i2c.cpp
+├── bridge/     Puente Python + visor SIEM
+└── docs/       Protocolo, resumen y esta guía</code></pre>
+    <p>Cada fase debe quedar funcionando (y, idealmente, commiteada) antes de seguir.</p>
+  </section>
+
+  <section class="reveal">
+    <h2 id="nota">Nota sobre el desarrollo</h2>
+    <p>Este proyecto lo desarrollé de la mano de <strong>Claude</strong> (IA de Anthropic), que hizo de profesor/mentor: me guió en cada fase y me explicó el <em>porqué</em> de las decisiones, no solo el "qué". Yo dirigí el proyecto, probé cada paso en la placa real y diagnostiqué los tropiezos de hardware. Muchos de los "tropiezos" de esta guía salieron precisamente de esa forma de trabajar: entender el error, no esquivarlo. Lo dejo escrito por transparencia.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/Joaquin7gg/esp32-pc-monitor" target="_blank" rel="noopener">Ver código en GitHub ↗</a>
+      <a class="btn btn-ghost" href="monitorizador.html">← Volver al proyecto</a>
+    </div>
+  </section>
+
+</main>
+
+<footer><div class="wrap foot"><span>© 2026 Joaquín Luis García · Almería, ES</span><span>guía de construcción — sys/sec</span></div></footer>
+
+<script>
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const root = document.documentElement, tbtn = document.getElementById('theme');
+const sun = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const moon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function setTheme(t){ root.setAttribute('data-theme', t); tbtn.innerHTML = t==='dark' ? moon : sun; }
+setTheme('dark');
+tbtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='dark' ? 'light' : 'dark'));
+
+const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.08});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+(function(){
+  const c = document.getElementById('net'); if(!c) return;
+  const ctx = c.getContext('2d'); let w,h,dpr,nodes=[],pkts=[],raf;
+  const COUNT = 16, LINK = 200;
+  function color(){ return getComputedStyle(document.body).getPropertyValue('--net').trim() || 'rgba(94,234,212,1)'; }
+  function rgba(a){ const base=color(); return base.replace(/[\d.]+\)$/,a+')'); }
+  function resize(){ dpr=Math.min(window.devicePixelRatio||1,2); w=c.clientWidth=innerWidth; h=c.clientHeight=innerHeight; c.width=w*dpr; c.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  function init(){ nodes=[]; for(let i=0;i<COUNT;i++) nodes.push({x:Math.random()*w,y:Math.random()*h*.8,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22}); pkts=[]; for(let i=0;i<7;i++) pkts.push({a:(Math.random()*COUNT)|0,b:(Math.random()*COUNT)|0,t:Math.random()}); }
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h*.85)n.vy*=-1; }
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){ const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy); if(d<LINK){ ctx.strokeStyle=rgba(0.10*(1-d/LINK)); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); } }
+    for(const n of nodes){ ctx.fillStyle=rgba(0.5); ctx.beginPath(); ctx.arc(n.x,n.y,1.7,0,7); ctx.fill(); }
+    for(const p of pkts){ p.t+=0.006; if(p.t>=1){ p.t=0; p.a=(Math.random()*nodes.length)|0; p.b=(Math.random()*nodes.length)|0; } const A=nodes[p.a], B=nodes[p.b]; if(!A||!B) continue; const x=A.x+(B.x-A.x)*p.t, y=A.y+(B.y-A.y)*p.t; ctx.fillStyle=rgba(0.9); ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill(); ctx.fillStyle=rgba(0.18); ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill(); }
+    raf=requestAnimationFrame(frame);
+  }
+  function start(){ resize(); init(); cancelAnimationFrame(raf); frame(); if(reduce) cancelAnimationFrame(raf); }
+  addEventListener('resize', ()=>{ resize(); init(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) cancelAnimationFrame(raf); else if(!reduce){ raf=requestAnimationFrame(frame);} });
+  start();
+})();
+</script>
+</body>
+</html>
