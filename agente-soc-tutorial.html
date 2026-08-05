@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tutorial: construye un agente de triaje SOC local · Joaquín Luis García</title>
+<meta name="description" content="Tutorial paso a paso para construir desde cero un agente de IA local de triaje de logs SOC: detección determinista, MITRE ATT&CK, un harness de evaluación y el experimento honesto orquestado vs autónomo." />
+<meta name="theme-color" content="#0C141F" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root, [data-theme="dark"]{
+    --bg:#0C141F; --bg-grad:#0F1A26; --panel:#13202E; --panel-2:#172838;
+    --border:#233344; --border-soft:#1B2937;
+    --text:#E4ECF5; --muted:#8497AD; --muted-dim:#5C6E83;
+    --accent:#5EEAD4; --accent-strong:#2DD4BF; --accent-ink:#06231f; --warm:#F4B860;
+    --net:rgba(94,234,212,1); --code-bg:#0A1019;
+  }
+  [data-theme="light"]{
+    --bg:#EDF2F7; --bg-grad:#F6F9FC; --panel:#FFFFFF; --panel-2:#F4F8FB;
+    --border:#D3DEE9; --border-soft:#E1E9F1;
+    --text:#16242F; --muted:#516274; --muted-dim:#8497A8;
+    --accent:#0E9E8E; --accent-strong:#0B8576; --accent-ink:#ffffff; --warm:#C77D1A;
+    --net:rgba(14,158,142,1); --code-bg:#0d1620;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:linear-gradient(180deg,var(--bg-grad),var(--bg) 460px);
+    color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .4s,color .4s}
+  a{color:inherit;text-decoration:none}
+  main a[href^="http"],main a[href$=".html"]{color:var(--accent)}
+  .wrap{max-width:880px;margin:0 auto;padding:0 28px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+  code{font-family:"IBM Plex Mono",monospace;font-size:.88em;background:color-mix(in srgb,var(--accent) 10%,transparent);
+    border:1px solid var(--border-soft);border-radius:5px;padding:1px 6px;color:var(--text)}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:15px 18px;overflow-x:auto;
+    margin:14px 0;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;color:#c3cad6}
+  pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+  pre .cm{color:#6b7686}
+
+  #net{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.45;
+    mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%);
+    -webkit-mask-image:radial-gradient(1000px 760px at 72% 4%, #000 0%, transparent 72%)}
+  [data-theme="light"] #net{opacity:.34}
+
+  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 72%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border-soft)}
+  .bar{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .handle{font-family:"Space Grotesk";font-weight:700;letter-spacing:.04em;font-size:15px;display:flex;align-items:center;gap:6px}
+  .handle b{color:var(--accent)}
+  .handle small{font-family:"IBM Plex Mono";font-weight:400;font-size:12px;color:var(--muted)}
+  .back{font-size:13.5px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;transition:color .2s,gap .18s}
+  .back:hover{color:var(--text);gap:10px}
+  .tools{display:flex;align-items:center;gap:14px}
+  .theme-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);cursor:pointer;display:grid;place-items:center;transition:transform .2s,border-color .2s}
+  .theme-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .theme-btn svg{width:17px;height:17px}
+
+  .phero{padding:56px 0 8px}
+  .eyebrow{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--accent);letter-spacing:.05em;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);opacity:.6}
+  h1{font-family:"Space Grotesk";font-weight:700;font-size:clamp(1.9rem,4.4vw,2.9rem);line-height:1.07;letter-spacing:-.02em}
+  .subtitle{font-size:clamp(15px,1.8vw,17px);color:var(--muted);margin-top:16px;max-width:66ch}
+  .subtitle strong{color:var(--text);font-weight:600}
+  .facts{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+  .fact{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);border:1px solid var(--border-soft);
+    background:color-mix(in srgb,var(--panel) 60%,transparent);padding:7px 12px;border-radius:8px}
+  .fact b{color:var(--accent);font-weight:500}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+  .btn{font-size:14px;font-weight:500;padding:11px 20px;border-radius:9px;border:1px solid var(--border);
+    transition:transform .18s,border-color .2s,background .2s;display:inline-flex;align-items:center;gap:9px;background:transparent;color:var(--text);cursor:pointer}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent-strong)}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0 6px}
+  .toc a{font-family:"IBM Plex Mono";font-size:12px;color:var(--muted);border:1px solid var(--border-soft);
+    background:color-mix(in srgb,var(--panel) 55%,transparent);padding:6px 11px;border-radius:8px;transition:color .2s,border-color .2s}
+  .toc a:hover{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--border))}
+
+  section{padding:34px 0;border-top:1px solid var(--border-soft)}
+  h2{font-family:"Space Grotesk";font-weight:600;font-size:clamp(1.35rem,2.8vw,1.8rem);letter-spacing:-.01em;scroll-margin-top:72px}
+  .fase{font-family:"IBM Plex Mono";font-size:12px;color:var(--accent);letter-spacing:.06em;display:block;margin-bottom:6px}
+  h3{font-family:"Space Grotesk";font-weight:600;font-size:1.02rem;margin:22px 0 8px}
+  p{margin:0 0 14px;max-width:68ch}
+  p strong{font-weight:600}
+  ul{margin:0 0 14px;padding-left:2px;list-style:none;max-width:68ch}
+  li{position:relative;padding-left:20px;margin-bottom:9px}
+  li::before{content:"▸";position:absolute;left:0;color:var(--accent);opacity:.7}
+  .obj{color:var(--muted);font-style:italic}
+
+  .decision, .tropiezo{border-radius:12px;padding:18px 22px;margin:16px 0;max-width:74ch}
+  .decision{border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));border-left:3px solid var(--accent);
+    background:color-mix(in srgb,var(--accent) 6%,transparent)}
+  .tropiezo{border:1px solid color-mix(in srgb,var(--warm) 30%,var(--border));border-left:3px solid var(--warm);
+    background:color-mix(in srgb,var(--warm) 6%,transparent)}
+  .decision .k,.tropiezo .k{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:9px}
+  .decision .k{color:var(--accent)} .tropiezo .k{color:var(--warm)}
+  .decision p:last-child,.tropiezo p:last-child{margin-bottom:0}
+  .decision b,.tropiezo b{color:var(--text)}
+  .rule{text-align:center;padding:26px}
+  .rule .big{font-family:"Space Grotesk";font-weight:700;font-size:clamp(1.3rem,3.4vw,1.9rem);color:var(--text);letter-spacing:-.01em}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--border-soft);border-radius:12px;background:color-mix(in srgb,var(--panel) 45%,transparent);margin:16px 0}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:440px}
+  th,td{text-align:left;padding:10px 15px;border-bottom:1px solid var(--border-soft);vertical-align:top}
+  thead th{font-family:"IBM Plex Mono";font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  td b{color:var(--text)}
+
+  footer{border-top:1px solid var(--border-soft);padding:26px 0;margin-top:20px}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted-dim)}
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  @media (max-width:760px){section{padding:28px 0}.phero{padding:40px 0 6px}}
+</style>
+</head>
+<body>
+<canvas id="net" aria-hidden="true"></canvas>
+
+<header>
+  <div class="wrap bar">
+    <a class="back" href="agente-soc.html">← Volver al proyecto</a>
+    <div class="tools">
+      <div class="handle">JLG<b>·</b><small>sys/sec</small></div>
+      <button class="theme-btn" id="theme" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema"></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="phero" id="top" style="border-top:none">
+    <div class="eyebrow mono">tutorial · ciberseguridad · desde cero</div>
+    <h1>Construye tú mismo un agente de triaje SOC local</h1>
+    <p class="subtitle">Cómo reproducir el proyecto <strong>desde cero</strong>, paso a paso, con el razonamiento detrás de cada decisión. No es solo "escribe esto": es <em>por qué</em> se escribe así, que es lo que de verdad se aprende.</p>
+    <div class="facts">
+      <span class="fact">Nivel: <b>intermedio (Python + terminal)</b></span>
+      <span class="fact">Tiempo: <b>un fin de semana largo</b></span>
+      <span class="fact">No necesitas: <b>saber de IA ni de ciberseguridad</b></span>
+    </div>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/Joaquin7gg/soc-triage-agent" target="_blank" rel="noopener">Ver repositorio ↗</a>
+      <a class="btn btn-ghost" href="agente-soc.html">← Volver al proyecto</a>
+    </div>
+    <p class="subtitle" style="margin-top:22px;font-size:14px">Lo que vas a montar: un agente de IA <strong>local y offline</strong> que lee logs de seguridad, detecta patrones de ataque con código determinista, los mapea a MITRE ATT&amp;CK y deja que un modelo pequeño redacte el informe. Con un harness que mide si el modelo es fiable.</p>
+    <nav class="toc" aria-label="Fases">
+      <a href="#regla">La regla</a>
+      <a href="#fase0">0 · Entorno</a>
+      <a href="#fase1">1 · Detector + informe</a>
+      <a href="#fase2">2 · El harness</a>
+      <a href="#fase3">3 · 2º formato</a>
+      <a href="#fase4">4 · Correlación</a>
+      <a href="#fase5">5 · Experimento honesto</a>
+      <a href="#fase6">6 · Tu hardware</a>
+      <a href="#fase7">7 · Publicar</a>
+      <a href="#meta">Meta-lección</a>
+    </nav>
+  </section>
+
+  <section class="reveal">
+    <h2 id="regla">La regla que decide todo</h2>
+    <p>Antes de escribir una línea, interioriza esto, porque condiciona el resto:</p>
+    <div class="decision rule">
+      <span class="big">El código detecta. La IA narra.</span>
+    </div>
+    <p>Toda la detección (contar, cruzar, comparar, ordenar) la hace <strong>Python determinista</strong> — código que siempre da el mismo resultado con los mismos datos. El modelo de lenguaje <strong>solo redacta</strong> el informe a partir de hallazgos que el código ya encontró. Nunca detecta, nunca cuenta, nunca decide.</p>
+    <p>¿Por qué? Porque un modelo pequeño (3-4B parámetros, lo que cabe en 4 GB de VRAM) <strong>alucina</strong>: se inventa datos con seguridad. Si le dejas contar ataques, un día "verá" una IP que no existe. Manteniéndolo lejos de la detección, ese riesgo desaparece por diseño, no por suerte. Este reparto también imita a los productos SOC reales: no es un apaño por tener poca máquina, es la arquitectura correcta.</p>
+    <div class="decision">
+      <span class="k">Guárdate esta regla</span>
+      <p>Cada vez que dudes "¿esto lo hace el código o la IA?", la respuesta es: <b>si implica contar o comparar, el código.</b></p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase0"><span class="fase">Fase 0</span>El entorno</h2>
+    <h3>0.1 · Python de verdad</h3>
+    <p>En Windows, cuidado: puede que tengas unos "Python" falsos que son atajos a la Microsoft Store (versión <code>0.0.0.0</code>). Comprueba:</p>
+    <pre><code>python --version</code></pre>
+    <p>Si no sale un <code>3.11</code> o <code>3.12</code> real, instálalo desde python.org marcando <strong>"Add Python to PATH"</strong>, o con <code>winget install Python.Python.3.12</code>.</p>
+    <h3>0.2 · El motor de IA local: LM Studio</h3>
+    <p>Descarga LM Studio. Es el programa que ejecuta modelos de IA <strong>dentro de tu ordenador</strong>, sin internet — la clave de la privacidad del proyecto.</p>
+    <h3>0.3 · Elegir el modelo (la primera lección)</h3>
+    <p>En LM Studio, busca y descarga <strong>Llama 3.2 3B Instruct</strong>, cuantización <strong>Q4_K_M</strong> (~2 GB). La decisión importante es <em>cuál</em> eliges, y por qué no uno más grande:</p>
+    <ul>
+      <li>Tu modelo tiene que <strong>caber en la VRAM</strong>. Con 4 GB, un modelo de 6 GB no entra: se reparte con la RAM del sistema y va lentísimo.</li>
+      <li>LM Studio te avisa con una etiqueta verde <strong>"Full GPU Offload Possible"</strong> cuando cabe entero. Fíate de esa etiqueta, <strong>no del número de parámetros</strong>: hay modelos "4B" cuyo fichero pesa 6 GB.</li>
+      <li>La <strong>cuantización</strong> (Q4) es lo que hace que quepa: encoge el modelo a costa de una pérdida de calidad mínima. Para <em>redactar</em> un informe, esa pérdida no importa.</li>
+    </ul>
+    <p>Arranca el servidor: pestaña <code>&lt;/&gt;</code> (Developer) → <strong>Start Server</strong>. Queda escuchando en <code>http://localhost:1234</code> con una API compatible con la de OpenAI.</p>
+    <h3>0.4 · El proyecto Python</h3>
+    <pre><code>mkdir soc-triage-agent &amp;&amp; cd soc-triage-agent
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1</code></pre>
+    <p>Dependencias mínimas (<code>requirements.txt</code>): solo <code>requests</code> y <code>python-dotenv</code>. Nada de librerías pesadas de IA — el modelo vive en LM Studio, tú solo le hablas por HTTP. <strong>Verifica</strong> que puedes hablar con el modelo:</p>
+    <pre><code>curl http://localhost:1234/v1/models</code></pre>
+    <div class="tropiezo">
+      <span class="k">⚠ Tropiezo · el nombre del modelo</span>
+      <p>Apúntate el <code>id</code> que devuelve (p. ej. <code>llama-3.2-3b-instruct</code>): tiene que ser el nombre <b>exacto</b>. Usar un genérico como <code>local-model</code> parece funcionar pero falla en cuanto el modelo se descarga por inactividad. Con el nombre real, LM Studio lo carga solo cuando llega la petición.</p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase1"><span class="fase">Fase 1</span>El primer detector y el informe</h2>
+    <p>Empieza con un solo formato: el log de <strong>SSH</strong> (<code>auth.log</code> de Linux), que apunta cada intento de conexión remota.</p>
+    <h3>1.1 · El parser (código, determinista)</h3>
+    <p>Una función que lea el fichero y convierta cada línea en un diccionario. Una expresión regular basta. Solo te interesan cuatro cosas: hora, usuario, IP, y si fue <code>Accepted</code> o <code>Failed</code>.</p>
+    <pre><code><span class="cm"># la forma, no el código completo (ver src/tools.py)</span>
+def parse_auth_log(ruta):
+    eventos = []
+    for linea in open(ruta, encoding="utf-8"):
+        m = PATRON.search(linea)
+        if m:
+            eventos.append({"hora": ..., "usuario": ..., "ip": ..., "estado": ...})
+    return eventos</code></pre>
+    <h3>1.2 · Los detectores (código, determinista)</h3>
+    <p>Cada detector recibe los eventos y devuelve una lista de "hallazgos". Escribe tres, cada uno buscando <strong>un</strong> patrón:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Detector</th><th>Qué busca</th><th>Severidad</th></tr></thead>
+      <tbody>
+        <tr><td><code>fuerza_bruta</code></td><td>Una IP con muchos fallos (≥5)</td><td>media</td></tr>
+        <tr><td><code>posible_compromiso</code></td><td>Muchos fallos y <b>luego</b> un acierto desde la misma IP</td><td>alta</td></tr>
+        <tr><td><code>horario_inusual</code></td><td>Un acceso correcto de madrugada</td><td>baja</td></tr>
+      </tbody>
+    </table></div>
+    <p>El del compromiso es el interesante: recorre los eventos <strong>en orden</strong>, cuenta fallos por IP, y si aparece un <code>Accepted</code> desde una IP que ya acumulaba fallos, es sospechoso. Esto es <em>contar y cruzar</em> — trabajo del código. Un hallazgo es un dict simple: <code>{tipo, severidad, ip, detalle}</code>.</p>
+    <h3>1.3 · El mapeo a MITRE (código, una tabla fija)</h3>
+    <p><strong>MITRE ATT&amp;CK</strong> es un catálogo estándar donde cada técnica de ataque tiene un código. Haz un diccionario que traduzca tu <code>tipo</code> de hallazgo a su técnica:</p>
+    <pre><code>MAPA = {
+    "fuerza_bruta": {"tecnica": "T1110", "nombre": "Brute Force", ...},
+    ...
+}</code></pre>
+    <p>Tabla fija en código, <strong>no</strong> generada por la IA — así el modelo no puede inventarse códigos que no existen.</p>
+    <h3>1.4 · El informe (aquí, y solo aquí, entra la IA)</h3>
+    <p>Manda los hallazgos ya detectados al modelo con un <code>SYSTEM_PROMPT</code> que le diga: "eres un analista, NO detectes nada nuevo, solo redacta y explica estos hallazgos". Recibe el texto y guárdalo.</p>
+    <div class="decision">
+      <span class="k">Detalle crítico (lo aprenderás midiendo en la Fase 2)</span>
+      <p>Ordena los hallazgos por severidad <b>en Python</b> antes de mandarlos, y dile al modelo "ya vienen ordenados, respeta el orden". No le pidas que ordene él.</p>
+    </div>
+    <h3>1.5 · El orquestador y la auditoría</h3>
+    <p>Un <code>agent.py</code> que llama a todo en orden fijo: parsear → detectar → enriquecer → informe. Y en cada paso, escribe una línea en <code>audit.jsonl</code> (JSON Lines): qué herramienta, cuándo, con qué resultado. Esa traza es lo que demuestra "mentalidad de seguridad": la herramienta deja rastro. <strong>Verifica</strong> con un modo <code>--sin-ia</code> que salte el modelo y solo enseñe la detección — debe funcionar sin LM Studio siquiera.</p>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase2"><span class="fase">Fase 2</span>El harness: medir en vez de suponer</h2>
+    <p><strong>Esta es la fase que diferencia el proyecto de un juguete.</strong> Un modelo de IA no da siempre la misma respuesta. Mirar <em>una</em> ejecución no te dice si es fiable, igual que tirar una moneda una vez no te dice si está trucada. Necesitas medir.</p>
+    <h3>2.1 · La regla del harness</h3>
+    <p>Escribe un <code>eval.py</code> que ejecute el informe <strong>N veces</strong> (20 está bien) y cuente los aciertos con <strong>comprobaciones de Python deterministas</strong>. Nunca uses otra IA para juzgar: un juez que también alucina no te dice nada.</p>
+    <h3>2.2 · Qué se comprueba</h3>
+    <p>La "verdad de referencia" sale de los propios hallazgos (deterministas, idénticos en las N ejecuciones — lo único que varía es el modelo). Con eso, comprueba en cada informe:</p>
+    <ul>
+      <li><strong>¿Menciona todas las IPs detectadas?</strong> (no se deja hallazgos)</li>
+      <li><strong>¿Aparece alguna IP que NO venía de los hallazgos?</strong> (la comprobación estrella: detecta alucinaciones)</li>
+      <li><strong>¿Aparece algún código MITRE inventado?</strong></li>
+      <li>¿Tiene las tres secciones? ¿Ordena por severidad? ¿Etiqueta la gravedad?</li>
+    </ul>
+    <h3>2.3 · La lección que caza el harness</h3>
+    <div class="tropiezo">
+      <span class="k">⚠ El bug que solo se ve midiendo</span>
+      <p>El informe ordenaba mal por severidad <b>1 de cada 3 veces</b>, enterrando lo grave debajo de lo leve. ¿La causa? Le estábamos pidiendo a la IA que ordenara. Y ordenar es comparar, o sea trabajo del código. Movimos el <code>sorted()</code> a Python y pasó a acertar el <b>100%</b>. Sin el harness, ese fallo habría estado ahí para siempre, invisible.</p>
+    </div>
+    <p><strong>Ese es el argumento de por qué el harness existe:</strong> no para sacar un número bonito, sino para enterarte cuando te equivocas.</p>
+    <div class="decision">
+      <span class="k">Truco de método</span>
+      <p>Cuando cambies una <em>comprobación</em> (no el modelo), no gastes GPU reejecutando. Guarda los informes de una tanda y "repúntualos" con las comprobaciones nuevas. Aísla el efecto de tu cambio y es instantáneo.</p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase3"><span class="fase">Fase 3</span>Un segundo formato de log</h2>
+    <p>Aquí demuestras que tu arquitectura aguanta. Añade el <strong>Firewall de Windows</strong> (<code>pfirewall.log</code>), que no habla de contraseñas sino de conexiones permitidas (<code>ALLOW</code>) y bloqueadas (<code>DROP</code>).</p>
+    <h3>3.1 · Detección de formato por contenido</h3>
+    <p>El agente debe distinguir qué log le has dado <strong>mirando el contenido</strong>, no el nombre del fichero (un fichero renombrado sigue siendo lo que es). El firewall de Windows escribe una cabecera <code>#Software: Microsoft Windows Firewall</code> que lo identifica sin ambigüedad.</p>
+    <h3>3.2 · Parser, detectores y tabla propios</h3>
+    <p>Un firewall ve cosas distintas, así que le tocan detectores distintos — sobre todo <strong>reconocimiento</strong> (alguien mirando qué hay antes de atacar):</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Detector</th><th>Patrón</th><th>MITRE</th></tr></thead>
+      <tbody>
+        <tr><td><code>escaneo_puertos</code></td><td>Bloqueos contra muchos puertos de <b>una</b> máquina</td><td>T1046</td></tr>
+        <tr><td><code>barrido_red</code></td><td>Bloqueos contra muchas <b>máquinas</b></td><td>T1018</td></tr>
+        <tr><td><code>acceso_tras_bloqueos</code></td><td>Muchos DROP y luego un ALLOW</td><td>T1110+T1021</td></tr>
+      </tbody>
+    </table></div>
+    <p>Tabla MITRE <strong>aparte</strong> de la de SSH: mezclarlas acabaría con un hallazgo de firewall etiquetado con una técnica de contraseñas.</p>
+    <h3>3.3 · La prueba de fuego</h3>
+    <p>Diseña un log sintético donde <strong>cada detector tenga su escenario sin pisar a los demás</strong> (el escáner ataca una máquina, el barrido usa un puerto). Y mide.</p>
+    <div class="decision">
+      <span class="k">Resultado esperado si lo has hecho bien</span>
+      <p><b>20/20, sin tocar una línea del código de IA.</b> Esa es la prueba de que la regla de oro funciona: añadir un formato es escribir parser y detectores; la IA ni se entera. Si te ves tocando el prompt para añadir un formato, algo va mal.</p>
+    </div>
+    <p><strong>Importante:</strong> mete el log nuevo en la suite del harness <strong>desde el primer día</strong>. No lo construyas y midas después — así descubres los problemas antes de tomar decisiones sobre ellos.</p>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase4"><span class="fase">Fase 4</span>El detector que correlaciona</h2>
+    <p>Este detector es el que mejor demuestra por qué la detección es del código. Una <strong>shell inversa</strong>: cuando el atacante entra, no es él quien sigue llamando — es tu máquina infectada la que le llama <strong>a él</strong> (así esquiva al firewall, que vigila lo que entra, no lo que sale).</p>
+    <h3>4.1 · Por qué es distinto a los demás</h3>
+    <p>Los otros detectores cuentan <strong>una</strong> cosa. Este <strong>correlaciona dos hechos separados en el tiempo</strong>:</p>
+    <ul>
+      <li>Una conexión <strong>saliente</strong> hacia un puerto raro (fuera de una lista blanca: web, DNS...).</li>
+      <li>Que el destino sea <strong>una IP que ya te estaba atacando antes</strong> en el mismo log.</li>
+    </ul>
+    <p>Por separado, cada hecho es tibio. Juntos, confirman la cadena completa: reconocimiento → acceso → control.</p>
+    <h3>4.2 · El código es trivial; ese es el punto</h3>
+    <pre><code>ips_hostiles = {e["ip"] for e in eventos if e["accion"] == "DROP"}
+<span class="cm"># ... más adelante, por cada salida rara:</span>
+confirmado = destino in ips_hostiles   <span class="cm"># &lt;- la correlación, en una línea</span></code></pre>
+    <p>Un <code>set</code> y una comprobación de pertenencia. Exacto, e igual de rápido con 60 eventos que con 60.000. Ahora imagina pedirle <strong>eso</strong> a un modelo de 3B: "recuerda todas las IPs bloqueadas de las primeras 40 líneas y compáralas con el destino de la 50". Es lo que peor hace. Y no fallaría siempre — fallaría <em>a veces</em>.</p>
+    <div class="decision">
+      <span class="k">La conclusión que va en tu portfolio</span>
+      <p>El reparto código/IA no es una excusa por tener poca VRAM. Con un modelo diez veces mayor, esto <b>seguiría</b> siendo trabajo de un <code>set</code>. La correlación es del código, punto.</p>
+    </div>
+    <p>Haz que el detector distinga dos casos: destino con antecedentes → <strong>alta</strong>; destino desconocido → <strong>media</strong> (puede ser una VPN legítima; avisa, no acuses).</p>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase5"><span class="fase">Fase 5</span>El experimento honesto</h2>
+    <p>Llega la pregunta obvia: <em>"un agente de verdad elige sus propias herramientas, ¿por qué el tuyo va en pasos fijos?"</em>. La respuesta fácil es "porque el modo autónomo va mal con modelos pequeños". <strong>Pero eso hay que medirlo, no afirmarlo.</strong></p>
+    <h3>5.1 · Construye el modo autónomo de verdad</h3>
+    <p>Usa el <em>tool calling</em> de la API (le pasas las herramientas al modelo y él decide cuál llamar). Y pónselo <strong>fácil a propósito</strong>, para que el experimento sea justo: herramientas sin argumentos, el prompt le dice qué orden tiene sentido, y dale reintentos por turno. Si aun con las cosas fáciles falla, la conclusión es más fuerte.</p>
+    <h3>5.2 · Mídelo con el mismo harness</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>&nbsp;</th><th>Orquestado</th><th>Autónomo</th></tr></thead>
+      <tbody>
+        <tr><td>Informes perfectos</td><td><b>18/20</b></td><td><b>0/10</b></td></tr>
+        <tr><td>Llegó a escribir informe</td><td>20/20</td><td>2/10</td></tr>
+        <tr><td>No se repitió</td><td>por diseño</td><td>0/10</td></tr>
+        <tr><td>Respetó el orden básico</td><td>por diseño</td><td><b>10/10</b></td></tr>
+      </tbody>
+    </table></div>
+    <p>Cero de diez. Se atascaba llamando a la misma herramienta once veces, sin leer que la respuesta no cambiaba. <strong>Pero</strong> respetó el orden 10/10: entiende la dependencia, no actúa al azar. No es que no sepa qué hacer — es que no sostiene el protocolo.</p>
+    <h3>5.3 · El límite honesto (esto es lo que te distingue)</h3>
+    <div class="decision">
+      <span class="k">Afirma solo lo que mediste</span>
+      <p>Ese fallo lo emite en parte el motor de LM Studio, no solo el modelo. La conclusión honesta es: "con <b>esta pila concreta</b> (Llama 3.2 3B + LM Studio 0.4.19), el orquestado gana 18/20 a 0/10". <b>No</b> "los modelos pequeños no valen para agentes" — eso sería afirmar más de lo que mediste. Convertir una opinión en un resultado con números y sus límites claros: eso separa un proyecto de estudiante de uno serio.</p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase6"><span class="fase">Fase 6</span>Medir tu propio hardware</h2>
+    <p>No supongas que "va bien". Mídelo mientras trabaja. Con <code>nvidia-smi</code> en un hilo aparte, captura durante una inferencia real:</p>
+    <ul>
+      <li><strong>Velocidad</strong> (tokens/s). En una RTX 3050 salieron ~52-56.</li>
+      <li><strong>Uso de GPU.</strong> Si está al 85%, el modelo está entero en la gráfica. Si está ocioso (~20%) y va lento, se reparte con la RAM: elegiste mal el modelo.</li>
+      <li><strong>VRAM.</strong> Aquí, 80% de los 4 GB. De eso, solo la mitad es el modelo; el resto es la <strong>ventana de contexto</strong>.</li>
+    </ul>
+    <h3>El techo real, y cómo predecirlo</h3>
+    <p>Mide cuántos tokens cuesta el prompt por hallazgo (aquí, ~115-140). Con una ventana de 8.192 tokens, sale un techo de <strong>~50 hallazgos por informe</strong>. Eso convierte "probar un log gigante" en una <strong>predicción falsable</strong>: no dará informes peores, dará un prompt que no cabe. La detección seguirá perfecta (es Python). Y la solución no será un modelo mejor, sino <strong>paginar los hallazgos</strong> — otra vez, código.</p>
+    <div class="tropiezo">
+      <span class="k">⚠ Ojo con extrapolar de una sola medición</span>
+      <p>Mide tres logs distintos, no uno. En este proyecto, la recta "tokens por hallazgo" parecía perfecta con un punto y fallaba un 12% con tres: los detectores que escriben detalles largos cuestan más. <b>Un punto miente.</b></p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2 id="fase7"><span class="fase">Fase 7</span>Publicarlo bien</h2>
+    <h3>7.1 · Git desde el principio</h3>
+    <p>No dejes dos días de trabajo en una carpeta sin red. <code>git init</code>, y commitea cada pieza con un mensaje que explique el <strong>porqué</strong>, no solo el qué.</p>
+    <h3>7.2 · Qué NO subir</h3>
+    <p>Un <code>.gitignore</code> que excluya: el <code>.env</code>, el entorno virtual <code>.venv</code>, los informes generados, los resultados del harness y los ajustes locales del editor. <strong>Solo datos sintéticos</strong> en el repo: IPs de rangos de documentación (RFC 5737: <code>192.0.2.x</code>, <code>198.51.100.x</code>, <code>203.0.113.x</code>), nunca reales.</p>
+    <h3>7.3 · Privacidad al publicar</h3>
+    <p>Antes de hacerlo público, barre el <strong>historial entero</strong> (no solo el estado actual) buscando: tu correo personal, secretos, claves, IPs reales. Lo que entra en un repo público puede quedar cacheado aunque lo borres. Usa el correo <code>@users.noreply.github.com</code> de GitHub en los commits:</p>
+    <pre><code>git config --local user.email "TU_ID+usuario@users.noreply.github.com"</code></pre>
+    <h3>7.4 · Licencia</h3>
+    <p>Sin licencia, tu código está protegido por defecto: público solo significa <em>visible</em>, no <em>usable</em>. Añade un fichero <code>LICENSE</code> con la <strong>MIT</strong> (la más permisiva) para que otros puedan usarlo manteniendo tu crédito.</p>
+  </section>
+
+  <section class="reveal">
+    <h2 id="meta">La meta-lección</h2>
+    <p>Si te llevas una sola cosa de construir esto, que sea esta:</p>
+    <div class="decision rule">
+      <span class="big">Desconfía del resultado que te da la razón demasiado fácil, y mídelo dos veces.</span>
+    </div>
+    <p>En este proyecto, cuatro veces se dio algo por bueno sin comprobarlo, y las cuatro estaba mal:</p>
+    <ul>
+      <li>El código que ordenaba mal 1 de cada 3 veces, invisible hasta medir.</li>
+      <li>Una config que "funcionaba"... solo porque el modelo estaba cargado a mano.</li>
+      <li>La afirmación sobre el modo autónomo, escrita con seguridad y sin un número detrás.</li>
+      <li>Una predicción de rendimiento a punto de escribirse con una sola medición.</li>
+    </ul>
+    <p>Las cuatro cayeron por lo mismo: mirar dos veces en vez de suponer. El agente que construyes es la excusa; <strong>ese reflejo es lo que de verdad aprendes</strong>, y en un perfil de seguridad vale más que cualquier detector.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/Joaquin7gg/soc-triage-agent" target="_blank" rel="noopener">Ver código en GitHub ↗</a>
+      <a class="btn btn-ghost" href="agente-soc.html">← Volver al proyecto</a>
+    </div>
+  </section>
+
+</main>
+
+<footer><div class="wrap foot"><span>© 2026 Joaquín Luis García · Almería, ES</span><span>tutorial — sys/sec</span></div></footer>
+
+<script>
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const root = document.documentElement, tbtn = document.getElementById('theme');
+const sun = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const moon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function setTheme(t){ root.setAttribute('data-theme', t); tbtn.innerHTML = t==='dark' ? moon : sun; }
+setTheme('dark');
+tbtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='dark' ? 'light' : 'dark'));
+
+const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.08});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+(function(){
+  const c = document.getElementById('net'); if(!c) return;
+  const ctx = c.getContext('2d'); let w,h,dpr,nodes=[],pkts=[],raf;
+  const COUNT = 16, LINK = 200;
+  function color(){ return getComputedStyle(document.body).getPropertyValue('--net').trim() || 'rgba(94,234,212,1)'; }
+  function rgba(a){ const base=color(); return base.replace(/[\d.]+\)$/,a+')'); }
+  function resize(){ dpr=Math.min(window.devicePixelRatio||1,2); w=c.clientWidth=innerWidth; h=c.clientHeight=innerHeight; c.width=w*dpr; c.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  function init(){ nodes=[]; for(let i=0;i<COUNT;i++) nodes.push({x:Math.random()*w,y:Math.random()*h*.8,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22}); pkts=[]; for(let i=0;i<7;i++) pkts.push({a:(Math.random()*COUNT)|0,b:(Math.random()*COUNT)|0,t:Math.random()}); }
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h*.85)n.vy*=-1; }
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){ const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy); if(d<LINK){ ctx.strokeStyle=rgba(0.10*(1-d/LINK)); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); } }
+    for(const n of nodes){ ctx.fillStyle=rgba(0.5); ctx.beginPath(); ctx.arc(n.x,n.y,1.7,0,7); ctx.fill(); }
+    for(const p of pkts){ p.t+=0.006; if(p.t>=1){ p.t=0; p.a=(Math.random()*nodes.length)|0; p.b=(Math.random()*nodes.length)|0; } const A=nodes[p.a], B=nodes[p.b]; if(!A||!B) continue; const x=A.x+(B.x-A.x)*p.t, y=A.y+(B.y-A.y)*p.t; ctx.fillStyle=rgba(0.9); ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill(); ctx.fillStyle=rgba(0.18); ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill(); }
+    raf=requestAnimationFrame(frame);
+  }
+  function start(){ resize(); init(); cancelAnimationFrame(raf); frame(); if(reduce) cancelAnimationFrame(raf); }
+  addEventListener('resize', ()=>{ resize(); init(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) cancelAnimationFrame(raf); else if(!reduce){ raf=requestAnimationFrame(frame);} });
+  start();
+})();
+</script>
+</body>
+</html>
